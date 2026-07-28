@@ -1,26 +1,346 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* ==========================================================================
+   デザイントークン — レトロ／雑誌風
+   紙の地色に墨と朱の2色だけ。装飾ではなく組版と罫線で見せる。
+   ========================================================================== */
+
+@theme {
+  /* 地 */
+  --color-paper: #f4f1ea;
+  --color-paper-tint: #eae5da;
+  --color-paper-deep: #ded7c8;
+
+  /* 墨 */
+  --color-ink: #14110f;
+  --color-ink-muted: #5b554c;
+  --color-ink-faint: #8f887c;
+
+  /* 差し色（朱）。リンク・ノンブル・強調のみ。 */
+  --color-vermilion: #c8452e;
+  --color-vermilion-deep: #9c331f;
+
+  /* 罫 */
+  --color-rule: #14110f;
+  --color-rule-faint: #c9c2b3;
+
+  /* 書体 */
+  --font-display: var(--font-display-src), "Times New Roman", serif;
+  --font-jp-serif: var(--font-jp-serif-src), "Hiragino Mincho ProN", serif;
+  --font-jp-sans: var(--font-jp-sans-src), "Hiragino Sans", sans-serif;
+  --font-label: var(--font-label-src), ui-monospace, monospace;
+
+  /* イージング */
+  --ease-paper: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+/* ==========================================================================
+   ベース
+   ========================================================================== */
 
-@media (prefers-color-scheme: dark) {
+@layer base {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    color-scheme: light only;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-jp-sans);
+    font-feature-settings: "palt" 1;
+    line-height: 1.9;
+    letter-spacing: 0.02em;
+    overflow-x: hidden;
+  }
+
+  /* 紙の質感。画像を読み込まずに SVG ノイズを敷く。 */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    pointer-events: none;
+    opacity: 0.05;
+    mix-blend-mode: multiply;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  ::selection {
+    background-color: var(--color-vermilion);
+    color: var(--color-paper);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-vermilion);
+    outline-offset: 3px;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* ==========================================================================
+   ユーティリティ
+   ========================================================================== */
+
+@utility label {
+  font-family: var(--font-label);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  line-height: 1.4;
+}
+
+@utility display {
+  font-family: var(--font-display);
+  font-weight: 400;
+  line-height: 0.92;
+  letter-spacing: -0.01em;
+}
+
+@utility jp-serif {
+  font-family: var(--font-jp-serif);
+  font-feature-settings: "palt" 1;
+}
+
+/* 誌面のノド。左右のガター付き最大幅コンテナ。 */
+@utility spread {
+  width: 100%;
+  max-width: 84rem;
+  margin-inline: auto;
+  padding-inline: 1.25rem;
+
+  @media (width >= 48rem) {
+    padding-inline: 2.5rem;
+  }
+
+  @media (width >= 80rem) {
+    padding-inline: 3.5rem;
+  }
+}
+
+/* 縦組み。作品ページの見出し脇のラベルに使う。 */
+@utility tate {
+  writing-mode: vertical-rl;
+  text-orientation: upright;
+}
+
+/* ==========================================================================
+   本文組版（Markdown の出力に当てる）
+   ========================================================================== */
+
+.prose {
+  font-size: 1rem;
+  line-height: 2.05;
+  color: var(--color-ink);
+}
+
+.prose > * + * {
+  margin-top: 1.6em;
+}
+
+.prose h2 {
+  font-family: var(--font-jp-serif);
+  font-size: clamp(1.375rem, 1.1rem + 1.1vw, 1.75rem);
+  font-weight: 600;
+  line-height: 1.5;
+  margin-top: 3.2em;
+  padding-top: 0.9em;
+  border-top: 1px solid var(--color-rule);
+  letter-spacing: 0.01em;
+}
+
+.prose h3 {
+  font-family: var(--font-jp-serif);
+  font-size: 1.125rem;
+  font-weight: 600;
+  line-height: 1.6;
+  margin-top: 2.4em;
+}
+
+.prose h2 + *,
+.prose h3 + * {
+  margin-top: 0.9em;
+}
+
+.prose a {
+  color: var(--color-vermilion);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.25em;
+}
+
+.prose a:hover {
+  background-color: var(--color-vermilion);
+  color: var(--color-paper);
+  text-decoration: none;
+}
+
+.prose strong {
+  font-weight: 700;
+  background: linear-gradient(
+    transparent 62%,
+    color-mix(in srgb, var(--color-vermilion) 22%, transparent) 62%
+  );
+}
+
+.prose ul,
+.prose ol {
+  padding-left: 1.4em;
+}
+
+.prose ul {
+  list-style: none;
+}
+
+.prose ul > li {
+  position: relative;
+}
+
+.prose ul > li::before {
+  content: "—";
+  position: absolute;
+  left: -1.4em;
+  color: var(--color-vermilion);
+}
+
+.prose ol {
+  list-style: decimal;
+}
+
+.prose ol > li::marker {
+  font-family: var(--font-label);
+  color: var(--color-vermilion);
+}
+
+.prose li + li {
+  margin-top: 0.5em;
+}
+
+.prose blockquote {
+  border-left: 3px solid var(--color-vermilion);
+  padding: 0.2em 0 0.2em 1.2em;
+  color: var(--color-ink-muted);
+  font-family: var(--font-jp-serif);
+}
+
+.prose blockquote > :first-child {
+  margin-top: 0;
+}
+
+.prose img {
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--color-rule);
+}
+
+.prose figure figcaption {
+  margin-top: 0.7em;
+  font-family: var(--font-label);
+  font-size: 0.6875rem;
+  letter-spacing: 0.12em;
+  color: var(--color-ink-muted);
+}
+
+.prose hr {
+  border: 0;
+  border-top: 1px solid var(--color-rule);
+  margin-block: 3em;
+}
+
+.prose table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9375rem;
+}
+
+.prose th,
+.prose td {
+  border: 1px solid var(--color-rule-faint);
+  padding: 0.6em 0.8em;
+  text-align: left;
+}
+
+.prose th {
+  background-color: var(--color-paper-tint);
+  font-family: var(--font-label);
+  font-size: 0.6875rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.prose :not(pre) > code {
+  font-family: var(--font-label);
+  font-size: 0.85em;
+  background-color: var(--color-paper-deep);
+  padding: 0.15em 0.4em;
+  border-radius: 2px;
+}
+
+.prose pre {
+  font-family: var(--font-label);
+  font-size: 0.8125rem;
+  line-height: 1.8;
+  padding: 1.25rem 1.4rem;
+  border: 1px solid var(--color-rule);
+  overflow-x: auto;
+  background-color: #fbf9f4 !important;
+}
+
+.prose pre code {
+  display: grid;
+  background: transparent;
+  padding: 0;
+}
+
+.prose [data-rehype-pretty-code-title] {
+  font-family: var(--font-label);
+  font-size: 0.6875rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  border: 1px solid var(--color-rule);
+  border-bottom: 0;
+  padding: 0.5em 1.4rem;
+  background-color: var(--color-paper-tint);
+}
+
+.prose [data-rehype-pretty-code-title] + pre {
+  margin-top: 0;
+}
+
+/* 見出しのアンカー（rehype-autolink-headings） */
+.prose .heading-anchor {
+  color: var(--color-ink-faint);
+  text-decoration: none;
+  margin-left: 0.4em;
+  font-size: 0.7em;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.prose h2:hover .heading-anchor,
+.prose h3:hover .heading-anchor {
+  opacity: 1;
+}
+
+.prose .heading-anchor:hover {
+  background: transparent;
+  color: var(--color-vermilion);
+}
+
+/* ==========================================================================
+   モーション。reduce 指定時は演出を全部止める。
+   ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
 }
