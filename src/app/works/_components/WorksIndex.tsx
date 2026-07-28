@@ -84,23 +84,24 @@ export function WorksIndex({ works, tags }: WorksIndexProps) {
         </div>
       ) : null}
 
-      {filtered.length === 0 ? (
-        <div className="mt-12 border-y border-rule py-20 text-center">
-          <p className="display text-3xl text-ink/60">No Works Found</p>
-          <p className="jp-serif mt-4 text-sm text-ink-muted">
-            この技術タグに当てはまる作品はまだありません。
-          </p>
-          <button
-            type="button"
-            onClick={() => setActive(null)}
-            className="label mt-6 border border-rule px-4 py-2 text-ink transition-colors hover:bg-vermilion hover:text-paper"
-          >
-            Show All →
-          </button>
-        </div>
-      ) : (
-        <Reveal className="mt-12">
-          <ul className="grid grid-cols-1 gap-y-16 md:grid-cols-12 md:gap-x-8 md:gap-y-4">
+      {/* Reveal は絞り込みで出し入れしない。中身だけ差し替える。 */}
+      <Reveal className="mt-12">
+        {filtered.length === 0 ? (
+          <div className="border-y border-rule py-20 text-center">
+            <p className="display text-3xl text-ink/60">No Works Found</p>
+            <p className="jp-serif mt-4 text-sm text-ink-muted">
+              この技術タグに当てはまる作品はまだありません。
+            </p>
+            <button
+              type="button"
+              onClick={() => setActive(null)}
+              className="label mt-6 border border-rule px-4 py-2 text-ink transition-colors hover:bg-vermilion hover:text-paper"
+            >
+              Show All →
+            </button>
+          </div>
+        ) : (
+          <ul className="grid grid-cols-1 gap-y-16 md:grid-cols-12 md:gap-x-8 md:gap-y-16">
             {filtered.map((work, position) => {
               const variant = variantOf(position);
               return (
@@ -110,8 +111,8 @@ export function WorksIndex({ works, tags }: WorksIndexProps) {
               );
             })}
           </ul>
-        </Reveal>
-      )}
+        )}
+      </Reveal>
     </div>
   );
 }
