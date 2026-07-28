@@ -10,7 +10,7 @@ export const site = {
   description:
     "モバイルアプリと Web を中心につくっているエンジニアのポートフォリオと記録。",
   established: "2026",
-  url: process.env.NEXT_PUBLIC_SITE_URL ?? "https://shimano-site.vercel.app",
+  url: process.env.NEXT_PUBLIC_SITE_URL ?? "https://shimano-yuuki.github.io",
   locale: "ja_JP",
   links: [
     { label: "GitHub", href: "https://github.com/shimano-yuuki" },

@@ -19,6 +19,9 @@ export const metadata: Metadata = {
     siteName: site.fullName,
     title: `${site.fullName} — ${site.role}`,
     description: site.description,
+    // scripts/generate-og.tsx が書き出した実ファイル。拡張子つきで置くことで、
+    // GitHub Pages でも Content-Type が image/png になる。
+    images: [{ url: "/og.png", width: 1200, height: 630, alt: site.fullName }],
   },
   twitter: { card: "summary_large_image" },
 };

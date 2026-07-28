@@ -51,12 +51,14 @@ export function Footer() {
                 </li>
               ))}
               <li>
-                <Link
+                {/* feed.xml はページではなく静的ファイル。Link にすると
+                    Next が存在しない RSC ペイロードを先読みして 404 になる。 */}
+                <a
                   href="/feed.xml"
                   className="text-sm text-paper/80 transition-colors hover:text-vermilion"
                 >
                   RSS
-                </Link>
+                </a>
               </li>
             </ul>
           </div>

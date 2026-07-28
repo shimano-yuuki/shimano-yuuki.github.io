@@ -59,3 +59,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
   return [...staticPages, ...workPages, ...postPages];
 }
+
+/** 静的書き出し（output: "export"）でこのルートを事前生成するため。 */
+export const dynamic = "force-static";
