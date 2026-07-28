@@ -1,13 +1,16 @@
-# shimano-site
+# shimano-yuuki.github.io
 
 ポートフォリオと記録。Next.js + GSAP で組んだ、レトロ／雑誌風の個人サイト。
+
+**公開先** → https://shimano-yuuki.github.io
 
 ## 動かす
 
 ```bash
 npm install
 npm run dev      # http://localhost:3000
-npm run build    # 本番ビルド（型チェックと frontmatter の検証も走る）
+npm run build    # out/ に静的書き出し（型チェックと frontmatter の検証も走る）
+npm run og       # OG 画像 public/og.png を作り直す（名前や肩書きを変えたとき）
 ```
 
 ## 作品や記事を増やす
@@ -94,6 +97,21 @@ frontmatter の必須項目が抜けていたり日付の形式が違うと、`n
 
 ## 公開
 
-`main` に push すると Vercel が自動でデプロイします。
-独自ドメインを使う場合は、環境変数 `NEXT_PUBLIC_SITE_URL` に本番 URL を設定してください
-（OG 画像・sitemap・RSS の絶対 URL に使われます）。
+`main` に push すると GitHub Actions が `out/` を書き出して GitHub Pages へ配信します
+（`.github/workflows/deploy.yml`）。手元で何かを叩く必要はありません。
+
+### 静的サイトゆえの制約
+
+- **画像は最適化されない。** サーバーを使わないので、置いた画像がそのまま配信されます。
+  写真やスクショは、アップロード前に長辺 2000px 程度・数百 KB まで縮めてください。
+- **OG 画像は実ファイル。** GitHub Pages は拡張子で Content-Type を決めるため、
+  Next.js の `opengraph-image.tsx` 規約（拡張子なしで書き出される）は使えません。
+  代わりに `npm run og` で `public/og.png` を作り、`src/app/layout.tsx` から参照しています。
+- **`/feed.xml` へのリンクは `<a>` で書く。** `<Link>` にすると Next が存在しない
+  RSC ペイロードを先読みして 404 になります。
+
+### 独自ドメインを使う場合
+
+1. `public/CNAME` に独自ドメインを1行で書く
+2. `.github/workflows/deploy.yml` の `NEXT_PUBLIC_SITE_URL` を新しい URL に変える
+3. `src/lib/site.ts` の `url` の既定値も合わせる
