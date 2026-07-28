@@ -13,10 +13,7 @@ export function Header() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
-  // ページが変わったらメニューは閉じる
-  useEffect(() => {
-    setOpen(false);
-  }, [pathname]);
+  const close = () => setOpen(false);
 
   // オーバーレイ表示中は背面をスクロールさせない
   useEffect(() => {
@@ -99,6 +96,7 @@ export function Header() {
                   <li key={item.href} className="border-t border-rule-faint">
                     <Link
                       href={item.href}
+                      onClick={close}
                       className="group flex items-baseline gap-4 py-4 sm:gap-8 sm:py-6"
                     >
                       <span className="label w-8 shrink-0 text-vermilion">

@@ -1,27 +1,25 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 
 const QUERY = "(prefers-reduced-motion: reduce)";
 
+function subscribe(onChange: () => void) {
+  const mql = window.matchMedia(QUERY);
+  mql.addEventListener("change", onChange);
+  return () => mql.removeEventListener("change", onChange);
+}
+
 /**
  * OS の「視差効果を減らす」設定。
- * 初回レンダーは false 固定にして SSR とクライアントの初期 HTML を一致させ、
- * マウント後に実際の値へ寄せる。
+ * サーバー側では false を返し、ハイドレーション後に実際の値へ寄せる。
  */
 export function useReducedMotion(): boolean {
-  const [reduced, setReduced] = useState(false);
-
-  useEffect(() => {
-    const mql = window.matchMedia(QUERY);
-    setReduced(mql.matches);
-
-    const onChange = (event: MediaQueryListEvent) => setReduced(event.matches);
-    mql.addEventListener("change", onChange);
-    return () => mql.removeEventListener("change", onChange);
-  }, []);
-
-  return reduced;
+  return useSyncExternalStore(
+    subscribe,
+    () => window.matchMedia(QUERY).matches,
+    () => false,
+  );
 }
 
 /** エフェクト内から同期的に読みたいとき用。 */
