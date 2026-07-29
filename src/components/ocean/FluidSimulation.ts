@@ -22,8 +22,8 @@ import {
 type Quality = "high" | "low";
 
 const SETTINGS = {
-  high: { sim: 192, dye: 768, pressureIterations: 24 },
-  low: { sim: 112, dye: 384, pressureIterations: 14 },
+  high: { sim: 160, dye: 512, pressureIterations: 18 },
+  low: { sim: 104, dye: 320, pressureIterations: 12 },
 } satisfies Record<Quality, { sim: number; dye: number; pressureIterations: number }>;
 
 /** 交互に書き込む2枚組のレンダーターゲット。 */
@@ -111,6 +111,8 @@ export class FluidSimulation {
   private flow = 0;
   /** 本文の背後を落としている量（0〜1）。 */
   private veil = 0;
+  /** 最後に人が触った時刻（秒）。放置中は計算量を落とす。 */
+  private lastInteraction = 0;
 
   constructor({ canvas, text, quality = "high" }: FluidOptions) {
     this.text = text;
@@ -472,7 +474,7 @@ export class FluidSimulation {
     this.width = width;
     this.height = height;
 
-    const dpr = Math.min(window.devicePixelRatio, 2);
+    const dpr = Math.min(window.devicePixelRatio, 1.5);
     this.renderer.setPixelRatio(dpr);
     this.renderer.setSize(width, height, false);
 
@@ -499,6 +501,7 @@ export class FluidSimulation {
     if (moved) {
       this.pointer.active = true;
       this.idleSince = this.elapsed;
+      this.lastInteraction = this.elapsed;
     }
   }
 
@@ -517,6 +520,7 @@ export class FluidSimulation {
   /** スクロールの勢いを水流として注ぎ込む。 */
   addFlow(velocity: number) {
     this.flow = velocity;
+    if (Math.abs(velocity) > 0.002) this.lastInteraction = this.elapsed;
   }
 
   /**
@@ -609,7 +613,15 @@ export class FluidSimulation {
       this.autoStir(this.elapsed);
     }
 
-    this.step(dt);
+    /*
+      放置されている間は流体の更新を1フレームおきにする。
+      描画は毎フレーム続けるので見た目は滑らかなまま、計算量が半分になる。
+      触られた瞬間に元へ戻る。
+    */
+    const idle = this.elapsed - this.lastInteraction > 3;
+    if (!idle || this.frame % 2 === 0) {
+      this.step(idle ? dt * 2 : dt);
+    }
     this.draw();
   };
 
