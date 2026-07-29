@@ -257,7 +257,7 @@ export class FluidSimulation {
         uVelocity: { value: null },
         uCurl: { value: null },
         uTexelSize: { value: simTexel },
-        uCurlStrength: { value: 26 },
+        uCurlStrength: { value: 15 },
         uDt: { value: 0.016 },
       }),
       pressure: make(pressureFragment, {
@@ -429,12 +429,14 @@ export class FluidSimulation {
    * 1点だけだと通った筋しか動かないので、位相をずらした3点で常時かき回す。
    */
   private autoStir(time: number) {
+    // 海の水はゆっくり動く。速いと洗濯機のように見えてしまうので、
+    // 回る速さも注ぐ力も抑えめにしてある。
     const stirrers = [
-      { speed: 0.19, rx: 0.34, ry: 0.27, phase: 0, force: 300 },
-      { speed: -0.13, rx: 0.28, ry: 0.33, phase: 2.1, force: 250 },
-      { speed: 0.27, rx: 0.4, ry: 0.18, phase: 4.3, force: 210 },
+      { speed: 0.085, rx: 0.34, ry: 0.27, phase: 0, force: 190 },
+      { speed: -0.062, rx: 0.28, ry: 0.33, phase: 2.1, force: 165 },
+      { speed: 0.115, rx: 0.4, ry: 0.18, phase: 4.3, force: 140 },
       // 画面の下半分が淀まないように、低い位置を大きく回る点を足す
-      { speed: -0.09, rx: 0.42, ry: 0.36, phase: 1.1, force: 230 },
+      { speed: -0.045, rx: 0.42, ry: 0.36, phase: 1.1, force: 155 },
     ];
 
     // 深いところほど水は動かない。浅瀬の 1.0 から深海の 0.35 まで落とす。
@@ -577,6 +579,10 @@ export class FluidSimulation {
       this.flow,
       this.veil,
       this.materials.display.uniforms.uWaterLight.value as THREE.Color,
+      // ポインタは 0〜1（y は上向き）で持っているので NDC に直して渡す
+      this.pointer.active
+        ? { x: this.pointer.x * 2 - 1, y: this.pointer.y * 2 - 1 }
+        : null,
     );
     this.renderer.render(this.creatures.scene, this.creatures.camera);
     this.renderer.render(this.overlayScene, this.camera);

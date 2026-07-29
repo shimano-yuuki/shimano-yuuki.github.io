@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { BoidsFlock } from "./BoidsFlock";
 import { CREATURE_PAINTERS, GLOW_POINTS, type CreatureId } from "./creatures";
 
 /**
@@ -22,17 +23,33 @@ type Species = {
   count: number;
   /** 縦の揺れ幅。 */
   bob: number;
+  /**
+   * 泳ぎ方。
+   * lateral: 横うねり（尾ほど振れる） / flap: 翼の羽ばたき（端ほど振れる）
+   * pulse: 傘の脈動と触手の遅れ
+   * amp は UV 空間での振幅、freq は体に乗る波の数、speed は拍の速さ。
+   */
+  swim: { mode: "lateral" | "flap" | "pulse"; amp: number; freq: number; speed: number };
 };
 
+const SWIM_MODE = { lateral: 0, flap: 1, pulse: 2 } as const;
+
+// 群れ（旧 school）は BoidsFlock が受け持つので、ここには単独遊泳だけを置く
 const SPECIES: Species[] = [
-  { id: "fish", from: 0.0, to: 0.22, scale: 0.05, crossSeconds: 26, count: 5, bob: 0.03 },
-  { id: "school", from: 0.1, to: 0.42, scale: 0.2, crossSeconds: 52, count: 2, bob: 0.02 },
-  { id: "shark", from: 0.18, to: 0.44, scale: 0.16, crossSeconds: 40, count: 1, bob: 0.012 },
-  { id: "jellyfish", from: 0.34, to: 0.66, scale: 0.11, crossSeconds: 120, count: 3, bob: 0.06 },
-  { id: "manta", from: 0.38, to: 0.64, scale: 0.19, crossSeconds: 62, count: 1, bob: 0.02 },
-  { id: "whale", from: 0.56, to: 0.84, scale: 0.42, crossSeconds: 110, count: 1, bob: 0.015 },
-  { id: "squid", from: 0.62, to: 0.9, scale: 0.2, crossSeconds: 88, count: 1, bob: 0.03 },
-  { id: "anglerfish", from: 0.82, to: 1.0, scale: 0.13, crossSeconds: 150, count: 2, bob: 0.02 },
+  { id: "fish", from: 0.0, to: 0.22, scale: 0.05, crossSeconds: 26, count: 5, bob: 0.03,
+    swim: { mode: "lateral", amp: 0.08, freq: 7.0, speed: 7.0 } },
+  { id: "shark", from: 0.18, to: 0.44, scale: 0.16, crossSeconds: 40, count: 1, bob: 0.012,
+    swim: { mode: "lateral", amp: 0.05, freq: 4.2, speed: 3.4 } },
+  { id: "jellyfish", from: 0.34, to: 0.66, scale: 0.11, crossSeconds: 120, count: 3, bob: 0.06,
+    swim: { mode: "pulse", amp: 0.055, freq: 1.0, speed: 1.7 } },
+  { id: "manta", from: 0.38, to: 0.64, scale: 0.19, crossSeconds: 62, count: 1, bob: 0.02,
+    swim: { mode: "flap", amp: 0.11, freq: 2.0, speed: 1.9 } },
+  { id: "whale", from: 0.56, to: 0.84, scale: 0.42, crossSeconds: 110, count: 1, bob: 0.015,
+    swim: { mode: "lateral", amp: 0.028, freq: 3.0, speed: 1.5 } },
+  { id: "squid", from: 0.62, to: 0.9, scale: 0.2, crossSeconds: 88, count: 1, bob: 0.03,
+    swim: { mode: "pulse", amp: 0.03, freq: 1.0, speed: 1.0 } },
+  { id: "anglerfish", from: 0.82, to: 1.0, scale: 0.13, crossSeconds: 150, count: 2, bob: 0.02,
+    swim: { mode: "lateral", amp: 0.014, freq: 3.0, speed: 1.3 } },
 ];
 
 /** アトラス1枠の一辺（px）。 */
@@ -66,6 +83,8 @@ export class CreatureLayer {
   private atlas: THREE.CanvasTexture;
   private glowTexture: THREE.CanvasTexture;
   private aspect = 1;
+  /** 小魚の群れ。Boids で泳ぐ。 */
+  private flock: BoidsFlock;
 
   constructor(quality: "high" | "low") {
     this.atlas = new THREE.CanvasTexture(this.paintAtlas());
@@ -76,6 +95,17 @@ export class CreatureLayer {
     this.glowTexture.minFilter = THREE.LinearFilter;
 
     this.build(quality);
+
+    const fishUv = this.uvFor("fish");
+    this.flock = new BoidsFlock({
+      count: quality === "high" ? 48 : 24,
+      atlas: this.atlas,
+      uvOffset: fishUv.offset,
+      uvScale: fishUv.scale,
+      from: 0.08,
+      to: 0.44,
+    });
+    this.scene.add(this.flock.mesh);
   }
 
   /** 全種類を1枚のキャンバスに並べて焼く。 */
@@ -156,6 +186,16 @@ export class CreatureLayer {
             uOpacity: { value: 0 },
             uTint: { value: new THREE.Color(0, 0, 0) },
             uFlip: { value: 1 },
+            uTime: { value: 0 },
+            uPhase: { value: Math.random() * Math.PI * 2 },
+            uSwim: {
+              value: new THREE.Vector3(
+                species.swim.amp,
+                species.swim.freq,
+                species.swim.speed,
+              ),
+            },
+            uMode: { value: SWIM_MODE[species.swim.mode] },
           },
           transparent: true,
           depthTest: false,
@@ -223,6 +263,7 @@ export class CreatureLayer {
     flow: number,
     veil: number,
     waterLight: THREE.Color,
+    pointer: { x: number; y: number } | null,
   ) {
     /*
       浅い水では逆光の黒いシルエットが正しい。
@@ -255,6 +296,7 @@ export class CreatureLayer {
       const presence = 1 - t * t * (3 - 2 * t);
 
       const material = mesh.material as THREE.ShaderMaterial;
+      material.uniforms.uTime.value = time;
       (material.uniforms.uTint.value as THREE.Color).copy(tint);
       // 深いほど水に溶けて輪郭が薄くなる。
       // ベールの下では逆に少し濃くしないと、暗い水に埋もれてしまう。
@@ -303,9 +345,28 @@ export class CreatureLayer {
         }
       }
     }
+
+    // 群れ。単独遊泳と同じ濃度規則で出入りする
+    {
+      const center = (this.flock.from + this.flock.to) / 2;
+      const half = (this.flock.to - this.flock.from) / 2;
+      const distance = Math.abs(depth - center) / Math.max(half, 0.001);
+      const t = Math.min(Math.max((distance - 0.62) / 0.38, 0), 1);
+      const presence = 1 - t * t * (3 - 2 * t);
+      this.flock.update(
+        time,
+        presence,
+        tint,
+        presence * (0.9 - depth * 0.35) * (1 + veil * 0.55),
+        flow,
+        pointer,
+        this.aspect,
+      );
+    }
   }
 
   dispose() {
+    this.flock.dispose();
     this.atlas.dispose();
     this.glowTexture.dispose();
     this.scene.traverse((object) => {
@@ -337,11 +398,49 @@ const creatureFragment = /* glsl */ `
   uniform vec2 uUvScale;
   uniform float uOpacity;
   uniform vec3 uTint;
+  uniform float uTime;
+  uniform float uPhase;
+  /** x: 振幅（UV 空間）, y: 体に乗る波の数, z: 拍の速さ */
+  uniform vec3 uSwim;
+  /** 0: 横うねり / 1: 羽ばたき / 2: 脈動 */
+  uniform float uMode;
 
   varying vec2 vUv;
 
+  /**
+   * 体を UV 側で歪めて泳がせる。
+   * vUv は反転済みのアトラス向き（頭 = x が大きい側）なので、
+   * どちらへ進んでいても尾の重みは同じ式で取れる。
+   */
+  vec2 swimWarp(vec2 uv) {
+    float t = uTime * uSwim.z + uPhase;
+
+    if (uMode < 0.5) {
+      // 横うねり。頭はほぼ動かず、尾に向かって進行波の振幅が増える
+      float tail = pow(1.0 - uv.x, 1.4);
+      uv.y += sin(uv.x * uSwim.y - t) * uSwim.x * tail;
+    } else if (uMode < 1.5) {
+      // 羽ばたき。翼端（左右の端）ほど大きく上下する
+      float wing = pow(abs(uv.x - 0.5) * 2.0, 1.6);
+      uv.y += sin(t) * uSwim.x * wing;
+    } else {
+      // 脈動。傘が横に締まって開き、触手（v が小さい側）は遅れて揺れる
+      float squeeze = 1.0 + sin(t) * uSwim.x;
+      uv.x = 0.5 + (uv.x - 0.5) * squeeze;
+      float trail = 1.0 - uv.y;
+      uv.x += sin(t - trail * 2.4) * uSwim.x * 0.6 * trail * trail;
+      uv.y += cos(t) * uSwim.x * 0.3 * (1.0 - trail);
+    }
+    return uv;
+  }
+
   void main() {
-    vec2 uv = uUvOffset + vUv * uUvScale;
+    vec2 local = swimWarp(vUv);
+    if (local.x < 0.0 || local.x > 1.0 || local.y < 0.0 || local.y > 1.0) {
+      discard;
+    }
+
+    vec2 uv = uUvOffset + local * uUvScale;
     float mask = texture2D(uAtlas, uv).a;
     if (mask < 0.01) discard;
     gl_FragColor = vec4(uTint, mask * uOpacity);
