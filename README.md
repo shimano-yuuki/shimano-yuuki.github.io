@@ -1,6 +1,6 @@
 # shimano-yuuki.github.io
 
-ポートフォリオと記録。Next.js + GSAP で組んだ、レトロ／雑誌風の個人サイト。
+ポートフォリオと記録。サイト全体が1本の水柱で、スクロールが潜水になる WebGL の個人サイト。
 
 **公開先** → https://shimano-yuuki.github.io
 
@@ -78,6 +78,17 @@ draft: false # true にすると本番では非公開（開発中だけ見える
 frontmatter の必須項目が抜けていたり日付の形式が違うと、`npm run build` が
 どのファイルのどの項目かを指摘して止まります。壊れたまま公開されることはありません。
 
+## ドキュメント
+
+| | |
+| --- | --- |
+| `docs/DESIGN.md` | 意匠の決まり（配色・書体・可読性基準） |
+| `docs/OCEAN.md` | 海の仕組みと調整パラメータの早見表 |
+| `docs/CONTENT.md` | content/ の frontmatter 仕様 |
+| `docs/DECISIONS.md` | なぜこうなったかの経緯 |
+| `.claude/skills/` | 定型作業の手順（調整・追加・検証・デプロイ） |
+| `scripts/verify/` | 実測ツール（潜水スクショ・コントラスト・fps） |
+
 ## 構成
 
 | 場所 | 役割 |
@@ -87,13 +98,14 @@ frontmatter の必須項目が抜けていたり日付の形式が違うと、`n
 | `src/lib/site.ts` | 名前・肩書き・連絡先。**プロフィールを直すならまずここ** |
 | `src/lib/content.ts` | `content/` を読んで型を検証する層 |
 | `src/lib/markdown.ts` | Markdown → HTML（GFM・見出しリンク・コードハイライト） |
-| `src/components/motion/` | Lenis の慣性スクロールと GSAP の控えめな出現演出 |
-| `src/components/ui/` | 罫線・セクション見出し・カバーなどの誌面パーツ |
+| `src/components/motion/` | Lenis の慣性スクロールと出現演出 |
+| `src/components/ocean/` | 海。流体・深度・生き物・光（詳細は `docs/OCEAN.md`） |
 
 ## 演出について
 
-慣性スクロールと出現アニメーションは、OS の「視差効果を減らす」が有効なときは
-すべて無効になります。演出を切っても内容がひと通り読める状態を保っています。
+流体・生き物・慣性スクロール・出現アニメーションは、OS の「視差効果を減らす」が
+有効なときはすべて静止します。WebGL 非対応の環境では深度連動のグラデーションに
+落ちます。どちらの場合も内容はすべて読めます。
 
 ## 公開
 
