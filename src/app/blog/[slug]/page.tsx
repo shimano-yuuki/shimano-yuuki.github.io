@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Reveal } from "@/components/motion/Reveal";
-import { CoverPlate } from "@/components/ui/CoverPlate";
-import { Rule } from "@/components/ui/Rule";
+import { SplitHeading } from "@/components/motion/SplitHeading";
 import {
   formatDate,
   getPost,
@@ -57,42 +57,52 @@ export default async function PostPage({ params }: PostPageProps) {
   const showToc = headings.length >= 2;
 
   return (
-    <article className="spread py-12 sm:py-16">
-      {/* 扉 */}
-      <Reveal as="header">
-        <Rule weight="double" />
-        <div className="flex flex-wrap items-baseline gap-x-5 gap-y-2 pt-6">
-          <time dateTime={post.date} className="label text-vermilion">
+    <article className="pt-32 pb-28 sm:pt-40 sm:pb-40">
+      {/* 扉。日付とタグを細く置いて、タイトルだけを大きく立てる。 */}
+      <header className="measure">
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
+          <time dateTime={post.date} className="label text-fg-muted">
             {formatDate(post.date)}
           </time>
+          <span aria-hidden="true" className="h-px w-8 bg-line-bright" />
           <TagRow tags={post.tags} />
         </div>
-        <h1 className="jp-serif mt-5 max-w-[46rem] text-[clamp(1.75rem,5vw,3rem)] leading-[1.45] font-semibold">
-          {post.title}
-        </h1>
-        <p className="mt-5 max-w-[42rem] text-ink-muted">{post.excerpt}</p>
-      </Reveal>
+
+        <SplitHeading
+          as="h1"
+          lines={[post.title]}
+          className="font-jp mt-8 max-w-[54rem] text-[clamp(1.875rem,5.4vw,4rem)] leading-[1.22] font-bold tracking-[-0.02em] sm:mt-10"
+        />
+
+        <Reveal delay={0.15}>
+          <p className="mt-8 max-w-[38rem] text-sm leading-loose text-fg-muted">
+            {post.excerpt}
+          </p>
+        </Reveal>
+      </header>
 
       {/* カバーは持っている記事だけ。多くの記事は文字だけで始める。 */}
       {post.cover ? (
-        <div className="mt-10">
-          <CoverPlate
-            src={post.cover}
-            alt={post.title}
-            label={post.title}
-            className="aspect-[16/9]"
-            priority
-            sizes="(min-width: 1024px) 60rem, 100vw"
-          />
-        </div>
+        <Reveal className="measure mt-16 sm:mt-20">
+          <div className="relative aspect-[16/9] w-full overflow-hidden bg-surface">
+            <Image
+              src={post.cover}
+              alt={post.title}
+              fill
+              priority
+              sizes="(min-width: 1280px) 84rem, 100vw"
+              className="object-cover"
+            />
+          </div>
+        </Reveal>
       ) : null}
 
-      <div className="mt-12 sm:mt-16 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,15rem)] lg:gap-12">
+      <div className="measure mt-16 border-t border-line pt-14 sm:mt-24 sm:pt-20 lg:grid lg:grid-cols-[minmax(0,1fr)_14rem] lg:gap-16 xl:gap-24">
         {/* 目次。DOM 上は本文より前に置き、広い画面だけ右の段へ送る。 */}
         {showToc ? (
           <TableOfContents
             headings={headings}
-            className="mb-10 border-y border-rule-faint py-4 lg:sticky lg:top-24 lg:col-start-2 lg:row-start-1 lg:mb-0 lg:self-start lg:border-y-0 lg:border-l lg:border-rule-faint lg:py-0 lg:pl-5"
+            className="mb-14 border-y border-line py-6 lg:sticky lg:top-28 lg:col-start-2 lg:row-start-1 lg:mb-0 lg:self-start lg:border-y-0 lg:border-l lg:border-line lg:py-0 lg:pl-6"
           />
         ) : null}
 
@@ -107,17 +117,21 @@ export default async function PostPage({ params }: PostPageProps) {
       </div>
 
       {/* 前後の記事 */}
-      <Reveal as="footer" className="mt-20 sm:mt-24">
-        <Rule weight="double" />
-        <PostNav newer={newer} older={older} />
+      <Reveal as="footer" className="measure mt-28 sm:mt-36">
+        <p className="label text-fg-faint">Next Reading</p>
+        <div className="mt-10 border-t border-line pt-12">
+          <PostNav newer={newer} older={older} />
+        </div>
 
-        <div className="mt-10 border-t border-rule-faint pt-6">
+        <div className="mt-20 border-t border-line pt-8">
           <Link
             href="/blog"
-            className="group inline-flex flex-wrap items-baseline gap-x-3 gap-y-1"
+            className="group inline-flex flex-wrap items-baseline gap-x-4 gap-y-1"
           >
-            <span className="label text-vermilion">← Index</span>
-            <span className="jp-serif text-sm text-ink-muted transition-colors group-hover:text-ink">
+            <span className="label underline-sweep text-fg-muted transition-colors duration-500 group-hover:text-fg">
+              ← Back to Index
+            </span>
+            <span className="text-xs text-fg-faint transition-colors duration-500 group-hover:text-fg-muted">
               Journal 一覧へ戻る
             </span>
           </Link>

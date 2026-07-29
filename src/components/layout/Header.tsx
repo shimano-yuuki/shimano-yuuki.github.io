@@ -6,8 +6,7 @@ import { useEffect, useState } from "react";
 import { navigation, site } from "@/lib/site";
 
 /**
- * 誌面のマストヘッド。上部に固定し、二重罫で本文と切る。
- * ナビはオーバーレイに逃がして、常時見えるのは誌名とノンブルだけにしている。
+ * 最小限のナビ。常時見えるのは名前とトグルだけで、目次は全画面に開く。
  */
 export function Header() {
   const pathname = usePathname();
@@ -15,7 +14,6 @@ export function Header() {
 
   const close = () => setOpen(false);
 
-  // オーバーレイ表示中は背面をスクロールさせない
   useEffect(() => {
     if (!open) return;
     const previous = document.body.style.overflow;
@@ -34,56 +32,43 @@ export function Header() {
 
   return (
     <>
-      <header className="sticky top-0 z-50 bg-paper/92 backdrop-blur-[2px]">
-        <div className="spread">
-          <div className="flex items-center justify-between py-3">
-            <Link
-              href="/"
-              className="display text-xl leading-none tracking-[0.06em] sm:text-2xl"
-            >
-              {site.name}
-            </Link>
+      <header className="fixed inset-x-0 top-0 z-50 mix-blend-difference">
+        <div className="measure flex items-center justify-between py-5">
+          <Link
+            href="/"
+            className="display text-sm tracking-[0.24em] text-white uppercase"
+          >
+            {site.name}
+          </Link>
 
-            <span className="label hidden text-ink-faint sm:block">
-              Est. {site.established} — {site.role}
+          <button
+            type="button"
+            onClick={() => setOpen((value) => !value)}
+            aria-expanded={open}
+            aria-controls="site-menu"
+            className="label flex items-center gap-2.5 text-white"
+          >
+            <span className="relative flex h-[9px] w-4 flex-col justify-between">
+              <span
+                className={`h-px w-full bg-current transition-transform duration-500 ease-[var(--ease-out-expo)] ${open ? "translate-y-[4px] rotate-45" : ""}`}
+              />
+              <span
+                className={`h-px w-full bg-current transition-transform duration-500 ease-[var(--ease-out-expo)] ${open ? "-translate-y-[4px] -rotate-45" : ""}`}
+              />
             </span>
-
-            <button
-              type="button"
-              onClick={() => setOpen((value) => !value)}
-              aria-expanded={open}
-              aria-controls="site-menu"
-              className="label flex items-center gap-2 transition-colors hover:text-vermilion"
-            >
-              <span className="relative flex h-3 w-4 flex-col justify-between">
-                <span
-                  className={`h-px w-full bg-current transition-transform duration-300 ease-[var(--ease-paper)] ${open ? "translate-y-[5.5px] rotate-45" : ""}`}
-                />
-                <span
-                  className={`h-px w-full bg-current transition-opacity duration-200 ${open ? "opacity-0" : ""}`}
-                />
-                <span
-                  className={`h-px w-full bg-current transition-transform duration-300 ease-[var(--ease-paper)] ${open ? "-translate-y-[5.5px] -rotate-45" : ""}`}
-                />
-              </span>
-              {open ? "Close" : "Menu"}
-            </button>
-          </div>
+            {open ? "Close" : "Menu"}
+          </button>
         </div>
-        <div className="h-[3px] bg-rule" />
-        <div className="mt-[3px] h-px bg-rule" />
       </header>
 
-      {/* オーバーレイ目次 */}
       <div
         id="site-menu"
         inert={!open}
-        className={`fixed inset-0 z-40 bg-paper transition-opacity duration-300 ease-[var(--ease-paper)] ${
+        className={`fixed inset-0 z-40 bg-void transition-opacity duration-500 ease-[var(--ease-out-expo)] ${
           open ? "opacity-100" : "pointer-events-none opacity-0"
         }`}
       >
-        <div className="spread flex h-full flex-col justify-center pt-20 pb-12">
-          <p className="label mb-8 text-ink-faint">Contents</p>
+        <div className="measure flex h-full flex-col justify-center pt-24 pb-14">
           <nav>
             <ul>
               {navigation.map((item, index) => {
@@ -93,25 +78,23 @@ export function Header() {
                     : pathname.startsWith(item.href);
 
                 return (
-                  <li key={item.href} className="border-t border-rule-faint">
+                  <li key={item.href} className="border-t border-line">
                     <Link
                       href={item.href}
                       onClick={close}
-                      className="group flex items-baseline gap-4 py-4 sm:gap-8 sm:py-6"
+                      className="group flex items-center gap-5 py-4 sm:gap-10 sm:py-6"
                     >
-                      <span className="label w-8 shrink-0 text-vermilion">
+                      <span className="label w-7 shrink-0 text-fg-faint">
                         {String(index + 1).padStart(2, "0")}
                       </span>
                       <span
-                        className={`display text-[clamp(2.25rem,9vw,5rem)] transition-colors ${
-                          active
-                            ? "text-vermilion"
-                            : "group-hover:text-vermilion"
+                        className={`display text-[clamp(2.5rem,10vw,6.5rem)] transition-all duration-500 ease-[var(--ease-out-expo)] group-hover:translate-x-3 ${
+                          active ? "text-fg" : "text-fg-muted group-hover:text-fg"
                         }`}
                       >
                         {item.label}
                       </span>
-                      <span className="jp-serif ml-auto hidden text-xs text-ink-muted sm:block">
+                      <span className="ml-auto hidden text-xs text-fg-faint sm:block">
                         {item.labelJa}
                       </span>
                     </Link>
@@ -121,16 +104,16 @@ export function Header() {
             </ul>
           </nav>
 
-          <ul className="mt-10 flex flex-wrap gap-x-6 gap-y-2 border-t border-rule-faint pt-6">
+          <ul className="mt-10 flex flex-wrap gap-x-8 gap-y-2 border-t border-line pt-6">
             {site.links.map((link) => (
               <li key={link.label}>
                 <a
                   href={link.href}
                   target={link.href.startsWith("http") ? "_blank" : undefined}
                   rel="noreferrer"
-                  className="label text-ink-muted transition-colors hover:text-vermilion"
+                  className="label underline-sweep text-fg-muted transition-colors hover:text-fg"
                 >
-                  {link.label} ↗
+                  {link.label}
                 </a>
               </li>
             ))}

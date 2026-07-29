@@ -1,48 +1,34 @@
-import {
-  Instrument_Serif,
-  Shippori_Mincho_B1,
-  Space_Mono,
-  Zen_Kaku_Gothic_New,
-} from "next/font/google";
+import { Archivo, JetBrains_Mono, Noto_Sans_JP } from "next/font/google";
 
-/** 欧文見出し。誌面のロゴ・大見出しに使う。 */
-export const displaySerif = Instrument_Serif({
+/**
+ * 欧文。可変フォントで太さと幅を持つので、これ1本で大見出しから細いラベルまで賄える。
+ */
+export const display = Archivo({
   variable: "--font-display-src",
   subsets: ["latin"],
-  weight: "400",
-  style: ["normal", "italic"],
+  weight: ["400", "500", "600", "700", "800", "900"],
   display: "swap",
 });
 
-/** 和文見出し。欧文見出しと並べても線の太さが揃うものを選んでいる。 */
-export const japaneseSerif = Shippori_Mincho_B1({
-  variable: "--font-jp-serif-src",
+/** 和文。参照サイトと同じく Noto Sans JP。 */
+export const japanese = Noto_Sans_JP({
+  variable: "--font-jp-src",
   subsets: ["latin"],
-  weight: ["400", "600", "800"],
+  weight: ["300", "400", "500", "700"],
   display: "swap",
   preload: false,
 });
 
-/** 和文本文。 */
-export const japaneseSans = Zen_Kaku_Gothic_New({
-  variable: "--font-jp-sans-src",
+/** ラベル・数値・座標表示。 */
+export const mono = JetBrains_Mono({
+  variable: "--font-mono-src",
   subsets: ["latin"],
   weight: ["400", "500", "700"],
-  display: "swap",
-  preload: false,
-});
-
-/** ラベル・ノンブル・日付。雑誌のキャプション部分の役割。 */
-export const monoLabel = Space_Mono({
-  variable: "--font-label-src",
-  subsets: ["latin"],
-  weight: ["400", "700"],
   display: "swap",
 });
 
 export const fontVariables = [
-  displaySerif.variable,
-  japaneseSerif.variable,
-  japaneseSans.variable,
-  monoLabel.variable,
+  display.variable,
+  japanese.variable,
+  mono.variable,
 ].join(" ");

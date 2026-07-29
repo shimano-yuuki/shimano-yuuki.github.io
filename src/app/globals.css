@@ -1,37 +1,33 @@
 @import "tailwindcss";
 
 /* ==========================================================================
-   デザイントークン — レトロ／雑誌風
-   紙の地色に墨と朱の2色だけ。装飾ではなく組版と罫線で見せる。
+   デザイントークン — モノクローム
+   黒地に白だけ。色を使わないぶん、明度と余白と動きで階層をつける。
    ========================================================================== */
 
 @theme {
   /* 地 */
-  --color-paper: #f4f1ea;
-  --color-paper-tint: #eae5da;
-  --color-paper-deep: #ded7c8;
+  --color-void: #000000;
+  --color-surface: #0a0a0a;
+  --color-surface-raised: #141414;
 
-  /* 墨 */
-  --color-ink: #14110f;
-  --color-ink-muted: #5b554c;
-  --color-ink-faint: #8f887c;
-
-  /* 差し色（朱）。リンク・ノンブル・強調のみ。 */
-  --color-vermilion: #c8452e;
-  --color-vermilion-deep: #9c331f;
+  /* 文字 */
+  --color-fg: #ffffff;
+  --color-fg-muted: #8a8a8a;
+  --color-fg-faint: #5a5a5a;
 
   /* 罫 */
-  --color-rule: #14110f;
-  --color-rule-faint: #c9c2b3;
+  --color-line: #1f1f1f;
+  --color-line-bright: #333333;
 
   /* 書体 */
-  --font-display: var(--font-display-src), "Times New Roman", serif;
-  --font-jp-serif: var(--font-jp-serif-src), "Hiragino Mincho ProN", serif;
-  --font-jp-sans: var(--font-jp-sans-src), "Hiragino Sans", sans-serif;
-  --font-label: var(--font-label-src), ui-monospace, monospace;
+  --font-display: var(--font-display-src), "Helvetica Neue", sans-serif;
+  --font-jp: var(--font-jp-src), "Hiragino Sans", sans-serif;
+  --font-mono: var(--font-mono-src), ui-monospace, monospace;
 
   /* イージング */
-  --ease-paper: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out-quart: cubic-bezier(0.76, 0, 0.24, 1);
 }
 
 /* ==========================================================================
@@ -40,7 +36,8 @@
 
 @layer base {
   :root {
-    color-scheme: light only;
+    color-scheme: dark only;
+    background-color: var(--color-void);
   }
 
   html {
@@ -48,35 +45,35 @@
   }
 
   body {
-    background-color: var(--color-paper);
-    color: var(--color-ink);
-    font-family: var(--font-jp-sans);
-    font-feature-settings: "palt" 1;
-    line-height: 1.9;
-    letter-spacing: 0.02em;
+    background-color: var(--color-void);
+    color: var(--color-fg);
+    font-family: var(--font-jp);
+    font-weight: 400;
+    line-height: 1.8;
+    letter-spacing: 0.01em;
     overflow-x: hidden;
-  }
-
-  /* 紙の質感。画像を読み込まずに SVG ノイズを敷く。 */
-  body::before {
-    content: "";
-    position: fixed;
-    inset: 0;
-    z-index: 60;
-    pointer-events: none;
-    opacity: 0.05;
-    mix-blend-mode: multiply;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23n)'/%3E%3C/svg%3E");
+    -webkit-font-smoothing: antialiased;
   }
 
   ::selection {
-    background-color: var(--color-vermilion);
-    color: var(--color-paper);
+    background-color: var(--color-fg);
+    color: var(--color-void);
   }
 
   :focus-visible {
-    outline: 2px solid var(--color-vermilion);
-    outline-offset: 3px;
+    outline: 1px solid var(--color-fg);
+    outline-offset: 4px;
+  }
+
+  /* 走査線ひとつぶんのざらつき。黒ベタが平坦に見えないように。 */
+  body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 70;
+    pointer-events: none;
+    opacity: 0.028;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E");
   }
 }
 
@@ -84,31 +81,35 @@
    ユーティリティ
    ========================================================================== */
 
+/** 小さい欧文ラベル。座標や区分の表示に使う。 */
 @utility label {
-  font-family: var(--font-label);
+  font-family: var(--font-mono);
   font-size: 0.6875rem;
-  font-weight: 700;
-  letter-spacing: 0.18em;
+  font-weight: 500;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
   line-height: 1.4;
 }
 
+/** 大見出し。詰めて、太く、行間を潰す。 */
 @utility display {
   font-family: var(--font-display);
-  font-weight: 400;
-  line-height: 0.92;
-  letter-spacing: -0.01em;
+  font-weight: 800;
+  line-height: 0.86;
+  letter-spacing: -0.035em;
 }
 
-@utility jp-serif {
-  font-family: var(--font-jp-serif);
-  font-feature-settings: "palt" 1;
+/** 中見出し。display より少しゆるめる。 */
+@utility display-soft {
+  font-family: var(--font-display);
+  font-weight: 600;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
 }
 
-/* 誌面のノド。左右のガター付き最大幅コンテナ。 */
-@utility spread {
+@utility measure {
   width: 100%;
-  max-width: 84rem;
+  max-width: 92rem;
   margin-inline: auto;
   padding-inline: 1.25rem;
 
@@ -117,24 +118,41 @@
   }
 
   @media (width >= 80rem) {
-    padding-inline: 3.5rem;
+    padding-inline: 4rem;
   }
 }
 
-/* 縦組み。作品ページの見出し脇のラベルに使う。 */
-@utility tate {
-  writing-mode: vertical-rl;
-  text-orientation: upright;
+/** ホバーで下線が左から伸びるリンク。 */
+@utility underline-sweep {
+  position: relative;
+
+  &::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: -0.15em;
+    width: 100%;
+    height: 1px;
+    background-color: currentColor;
+    transform: scaleX(0);
+    transform-origin: right;
+    transition: transform 0.5s var(--ease-out-expo);
+  }
+
+  &:hover::after {
+    transform: scaleX(1);
+    transform-origin: left;
+  }
 }
 
 /* ==========================================================================
-   本文組版（Markdown の出力に当てる）
+   本文組版
    ========================================================================== */
 
 .prose {
   font-size: 1rem;
-  line-height: 2.05;
-  color: var(--color-ink);
+  line-height: 2;
+  color: #c8c8c8;
 }
 
 .prose > * + * {
@@ -142,21 +160,21 @@
 }
 
 .prose h2 {
-  font-family: var(--font-jp-serif);
+  font-family: var(--font-display);
+  font-weight: 700;
   font-size: clamp(1.375rem, 1.1rem + 1.1vw, 1.75rem);
-  font-weight: 600;
-  line-height: 1.5;
-  margin-top: 3.2em;
-  padding-top: 0.9em;
-  border-top: 1px solid var(--color-rule);
-  letter-spacing: 0.01em;
+  line-height: 1.35;
+  letter-spacing: -0.02em;
+  color: var(--color-fg);
+  margin-top: 3.4em;
 }
 
 .prose h3 {
-  font-family: var(--font-jp-serif);
-  font-size: 1.125rem;
+  font-family: var(--font-display);
   font-weight: 600;
-  line-height: 1.6;
+  font-size: 1.125rem;
+  line-height: 1.5;
+  color: var(--color-fg);
   margin-top: 2.4em;
 }
 
@@ -166,24 +184,20 @@
 }
 
 .prose a {
-  color: var(--color-vermilion);
+  color: var(--color-fg);
   text-decoration: underline;
-  text-decoration-thickness: 1px;
-  text-underline-offset: 0.25em;
+  text-decoration-color: var(--color-line-bright);
+  text-underline-offset: 0.28em;
+  transition: text-decoration-color 0.3s;
 }
 
 .prose a:hover {
-  background-color: var(--color-vermilion);
-  color: var(--color-paper);
-  text-decoration: none;
+  text-decoration-color: var(--color-fg);
 }
 
 .prose strong {
-  font-weight: 700;
-  background: linear-gradient(
-    transparent 62%,
-    color-mix(in srgb, var(--color-vermilion) 22%, transparent) 62%
-  );
+  color: var(--color-fg);
+  font-weight: 600;
 }
 
 .prose ul,
@@ -200,10 +214,13 @@
 }
 
 .prose ul > li::before {
-  content: "—";
+  content: "";
   position: absolute;
-  left: -1.4em;
-  color: var(--color-vermilion);
+  left: -1.2em;
+  top: 0.95em;
+  width: 0.5em;
+  height: 1px;
+  background-color: var(--color-fg-faint);
 }
 
 .prose ol {
@@ -211,8 +228,9 @@
 }
 
 .prose ol > li::marker {
-  font-family: var(--font-label);
-  color: var(--color-vermilion);
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  color: var(--color-fg-faint);
 }
 
 .prose li + li {
@@ -220,10 +238,9 @@
 }
 
 .prose blockquote {
-  border-left: 3px solid var(--color-vermilion);
-  padding: 0.2em 0 0.2em 1.2em;
-  color: var(--color-ink-muted);
-  font-family: var(--font-jp-serif);
+  border-left: 1px solid var(--color-line-bright);
+  padding-left: 1.4em;
+  color: var(--color-fg-muted);
 }
 
 .prose blockquote > :first-child {
@@ -233,21 +250,20 @@
 .prose img {
   width: 100%;
   height: auto;
-  border: 1px solid var(--color-rule);
 }
 
 .prose figure figcaption {
-  margin-top: 0.7em;
-  font-family: var(--font-label);
+  margin-top: 0.8em;
+  font-family: var(--font-mono);
   font-size: 0.6875rem;
   letter-spacing: 0.12em;
-  color: var(--color-ink-muted);
+  color: var(--color-fg-faint);
 }
 
 .prose hr {
   border: 0;
-  border-top: 1px solid var(--color-rule);
-  margin-block: 3em;
+  border-top: 1px solid var(--color-line);
+  margin-block: 3.5em;
 }
 
 .prose table {
@@ -258,35 +274,38 @@
 
 .prose th,
 .prose td {
-  border: 1px solid var(--color-rule-faint);
-  padding: 0.6em 0.8em;
+  border-bottom: 1px solid var(--color-line);
+  padding: 0.7em 0.9em 0.7em 0;
   text-align: left;
 }
 
 .prose th {
-  background-color: var(--color-paper-tint);
-  font-family: var(--font-label);
+  font-family: var(--font-mono);
   font-size: 0.6875rem;
+  font-weight: 500;
   letter-spacing: 0.14em;
   text-transform: uppercase;
+  color: var(--color-fg-muted);
 }
 
 .prose :not(pre) > code {
-  font-family: var(--font-label);
+  font-family: var(--font-mono);
   font-size: 0.85em;
-  background-color: var(--color-paper-deep);
-  padding: 0.15em 0.4em;
+  background-color: var(--color-surface-raised);
+  color: var(--color-fg);
+  padding: 0.18em 0.45em;
   border-radius: 2px;
 }
 
 .prose pre {
-  font-family: var(--font-label);
+  font-family: var(--font-mono);
   font-size: 0.8125rem;
-  line-height: 1.8;
-  padding: 1.25rem 1.4rem;
-  border: 1px solid var(--color-rule);
+  line-height: 1.75;
+  padding: 1.4rem 1.5rem;
+  border: 1px solid var(--color-line);
+  border-radius: 4px;
   overflow-x: auto;
-  background-color: #fbf9f4 !important;
+  background-color: #0d0d0d !important;
 }
 
 .prose pre code {
@@ -295,24 +314,23 @@
   padding: 0;
 }
 
+/* シンタックスハイライトもモノクロームに寄せる。色相を捨てて明度だけで組む。 */
+.prose pre span {
+  color: inherit !important;
+  filter: grayscale(1) brightness(1.7);
+}
+
 .prose [data-rehype-pretty-code-title] {
-  font-family: var(--font-label);
+  font-family: var(--font-mono);
   font-size: 0.6875rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  border: 1px solid var(--color-rule);
-  border-bottom: 0;
-  padding: 0.5em 1.4rem;
-  background-color: var(--color-paper-tint);
+  color: var(--color-fg-muted);
+  padding: 0 0 0.7em;
 }
 
-.prose [data-rehype-pretty-code-title] + pre {
-  margin-top: 0;
-}
-
-/* 見出しのアンカー（rehype-autolink-headings） */
 .prose .heading-anchor {
-  color: var(--color-ink-faint);
+  color: var(--color-fg-faint);
   text-decoration: none;
   margin-left: 0.4em;
   font-size: 0.7em;
@@ -323,11 +341,6 @@
 .prose h2:hover .heading-anchor,
 .prose h3:hover .heading-anchor {
   opacity: 1;
-}
-
-.prose .heading-anchor:hover {
-  background: transparent;
-  color: var(--color-vermilion);
 }
 
 /* ==========================================================================

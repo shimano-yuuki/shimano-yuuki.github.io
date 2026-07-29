@@ -6,14 +6,11 @@ import { WorksPreview } from "@/components/home/WorksPreview";
 import { getFeaturedWorks, getRecentPosts } from "@/lib/content";
 
 export default function Home() {
-  const works = getFeaturedWorks(4);
-  const posts = getRecentPosts(3);
-
   return (
     <>
-      <Hero lead={works[0]} />
-      <WorksPreview works={works} />
-      <JournalPreview posts={posts} />
+      <Hero />
+      <WorksPreview works={getFeaturedWorks(4)} />
+      <JournalPreview posts={getRecentPosts(3)} />
       <AboutPreview />
       <Contact />
     </>

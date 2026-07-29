@@ -33,11 +33,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ja" className={`${fontVariables} h-full antialiased`}>
-      <body className="flex min-h-full flex-col bg-paper text-ink">
+      <body className="flex min-h-full flex-col bg-void text-fg">
         <SmoothScroll>
           <a
             href="#main"
-            className="label sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-100 focus:bg-ink focus:px-4 focus:py-2 focus:text-paper"
+            className="label sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-100 focus:bg-fg focus:px-4 focus:py-2 focus:text-void"
           >
             Skip to content
           </a>

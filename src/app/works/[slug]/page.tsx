@@ -3,8 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Reveal } from "@/components/motion/Reveal";
-import { CoverPlate } from "@/components/ui/CoverPlate";
-import { Rule } from "@/components/ui/Rule";
+import { SplitHeading } from "@/components/motion/SplitHeading";
 import {
   formatDate,
   getWork,
@@ -13,6 +12,7 @@ import {
   renderBody,
   type Work,
 } from "@/lib/content";
+import { WorkPlate } from "../_components/WorkPlate";
 
 type Params = { slug: string };
 type Props = { params: Promise<Params> };
@@ -43,8 +43,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-/** 一覧と同じノンブルを事例ページでも使う。 */
-function nombre(slug: string): string {
+/** 一覧と同じ通し番号を事例ページでも使う。 */
+function serialOf(slug: string): string {
   const index = getWorks().findIndex((work) => work.slug === slug);
   return String(index + 1).padStart(2, "0");
 }
@@ -57,109 +57,111 @@ export default async function WorkPage({ params }: Props) {
 
   const { html } = await renderBody(work.body);
   const { previous, next } = getWorkNeighbors(slug);
-  const index = nombre(slug);
+  const serial = serialOf(slug);
 
   return (
-    <article className="spread pt-14 pb-28 sm:pt-20">
+    <article className="measure pt-36 pb-40 sm:pt-44 sm:pb-56">
       {/* 1. 扉 */}
       <header>
-        <Rule weight="double" />
-        <div className="flex flex-wrap items-baseline justify-between gap-x-8 gap-y-2 pt-4">
-          <span className="label text-vermilion">Case ({index})</span>
-          <Link
-            href="/works"
-            className="label text-ink-faint transition-colors hover:text-vermilion"
-          >
-            ← Works
-          </Link>
-        </div>
+        <Reveal>
+          <div className="flex flex-wrap items-baseline justify-between gap-x-10 gap-y-2">
+            <span className="label text-fg-muted">Case {serial}</span>
+            <Link
+              href="/works"
+              className="label underline-sweep text-fg-faint transition-colors duration-500 hover:text-fg"
+            >
+              All Works
+            </Link>
+          </div>
+        </Reveal>
 
-        <h1 className="display mt-6 text-[clamp(2.5rem,1.4rem+6.5vw,6rem)] break-words">
-          {work.title}
-        </h1>
+        <SplitHeading
+          as="h1"
+          lines={[work.title]}
+          className="display mt-8 break-words text-[clamp(2.75rem,11vw,8.5rem)]"
+        />
 
-        {work.subtitle ? (
-          <p className="jp-serif mt-4 text-base text-ink-muted sm:text-lg">
-            {work.subtitle}
-          </p>
-        ) : null}
-
-        <p className="mt-6 max-w-[38rem] border-t border-rule-faint pt-5 text-sm leading-relaxed text-ink-muted sm:text-base">
-          {work.summary}
-        </p>
+        <Reveal delay={0.15}>
+          <div className="mt-12 max-w-[38rem]">
+            {work.subtitle ? (
+              <p className="text-base text-fg sm:text-lg">{work.subtitle}</p>
+            ) : null}
+            <p className="mt-5 text-sm leading-relaxed text-fg-muted sm:text-base">
+              {work.summary}
+            </p>
+          </div>
+        </Reveal>
       </header>
 
-      {/* 2. カバー */}
-      <Reveal className="mt-12">
-        <CoverPlate
+      {/* 2. 面 */}
+      <Reveal className="mt-20 sm:mt-28">
+        <WorkPlate
           src={work.cover || undefined}
-          alt={work.title}
-          label={work.title}
-          index={index}
+          title={work.title}
+          index={serial}
           priority
-          sizes="(min-width: 1280px) 76rem, 100vw"
+          sizes="(min-width: 1280px) 84rem, 100vw"
           className="aspect-[4/3] w-full sm:aspect-[16/9]"
         />
       </Reveal>
 
-      {/* 3. 定型項目 */}
-      <Reveal className="mt-16">
-        <h2 className="label text-ink-faint">Specification</h2>
-        <dl className="mt-4 border-t-[3px] border-rule">
-          <SpecRow label="Role">
+      {/* 3. 定型項目。表組みにせず、ラベルと値を縦に積むだけにする。 */}
+      <Reveal className="mt-20 sm:mt-28">
+        <h2 className="sr-only">Specification</h2>
+        <dl className="grid grid-cols-2 gap-x-10 gap-y-12 sm:grid-cols-4 sm:gap-x-12">
+          <MetaItem label="Role">
             {work.role.length > 0 ? (
-              <span className="jp-serif">{work.role.join("／")}</span>
-            ) : (
-              <span className="text-ink-faint">—</span>
-            )}
-          </SpecRow>
-
-          <SpecRow label="Stack">
-            {work.stack.length > 0 ? (
-              <ul className="flex flex-wrap gap-2">
-                {work.stack.map((item) => (
-                  <li
-                    key={item}
-                    className="label border border-rule-faint px-2 py-1 text-ink-muted"
-                  >
-                    {item}
-                  </li>
+              <ul className="space-y-1.5">
+                {work.role.map((item) => (
+                  <li key={item}>{item}</li>
                 ))}
               </ul>
             ) : (
-              <span className="text-ink-faint">—</span>
+              <span className="text-fg-faint">—</span>
             )}
-          </SpecRow>
+          </MetaItem>
 
-          <SpecRow label="Date">
-            <time dateTime={work.date} className="label text-ink">
-              {formatDate(work.date)}
-            </time>
-          </SpecRow>
+          <MetaItem label="Stack">
+            {work.stack.length > 0 ? (
+              <ul className="space-y-1.5">
+                {work.stack.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+            ) : (
+              <span className="text-fg-faint">—</span>
+            )}
+          </MetaItem>
 
-          {work.links.length > 0 ? (
-            <SpecRow label="Links">
-              <ul className="flex flex-wrap gap-x-5 gap-y-2">
+          <MetaItem label="Date">
+            <time dateTime={work.date}>{formatDate(work.date)}</time>
+          </MetaItem>
+
+          <MetaItem label="Links">
+            {work.links.length > 0 ? (
+              <ul className="space-y-1.5">
                 {work.links.map(([label, href]) => (
                   <li key={label}>
                     <a
                       href={href}
                       target="_blank"
                       rel="noreferrer noopener"
-                      className="label text-vermilion underline decoration-1 underline-offset-4 transition-colors hover:bg-vermilion hover:text-paper hover:no-underline"
+                      className="underline-sweep inline-block text-fg transition-colors duration-500"
                     >
                       {label} ↗
                     </a>
                   </li>
                 ))}
               </ul>
-            </SpecRow>
-          ) : null}
+            ) : (
+              <span className="text-fg-faint">—</span>
+            )}
+          </MetaItem>
         </dl>
       </Reveal>
 
       {/* 4. 本文 */}
-      <Reveal className="mt-20">
+      <Reveal className="mt-24 sm:mt-32">
         <div
           className="prose max-w-[46rem]"
           dangerouslySetInnerHTML={{ __html: html }}
@@ -168,20 +170,20 @@ export default async function WorkPage({ params }: Props) {
 
       {/* 5. 図版 */}
       {work.gallery.length > 0 ? (
-        <Reveal className="mt-24">
-          <h2 className="label text-ink-faint">Gallery</h2>
-          <ul className="mt-5 grid grid-cols-1 gap-6 sm:grid-cols-2">
+        <Reveal className="mt-28 sm:mt-40">
+          <h2 className="label text-fg-faint">Gallery</h2>
+          <ul className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 sm:gap-8">
             {work.gallery.map((src, i) => (
               <li
                 key={src}
-                className="relative aspect-[4/3] overflow-hidden border border-rule bg-paper-tint"
+                className="relative aspect-[4/3] overflow-hidden bg-surface-raised"
               >
                 <Image
                   src={src}
                   alt={`${work.title} の図版 ${i + 1}`}
                   fill
                   sizes="(min-width: 640px) 50vw, 100vw"
-                  className="object-cover"
+                  className="object-cover grayscale brightness-90 transition-all duration-700 ease-[var(--ease-out-expo)] hover:brightness-110"
                 />
               </li>
             ))}
@@ -190,7 +192,10 @@ export default async function WorkPage({ params }: Props) {
       ) : null}
 
       {/* 6. 前後ナビ */}
-      <nav aria-label="前後の作品" className="mt-24 border-t-[3px] border-rule">
+      <nav
+        aria-label="前後の作品"
+        className="mt-32 border-t border-line sm:mt-44"
+      >
         <div className="grid grid-cols-1 sm:grid-cols-2">
           <NeighborCell work={previous} direction="prev" />
           <NeighborCell work={next} direction="next" />
@@ -198,10 +203,10 @@ export default async function WorkPage({ params }: Props) {
       </nav>
 
       {/* 7. 一覧へ戻る */}
-      <div className="mt-16 border-t border-rule-faint pt-6 text-center">
+      <div className="mt-20">
         <Link
           href="/works"
-          className="label inline-block border border-rule px-6 py-3 text-ink transition-colors hover:bg-vermilion hover:border-vermilion hover:text-paper"
+          className="label underline-sweep inline-block text-fg-muted transition-colors duration-500 hover:text-fg"
         >
           ← Works 一覧へ戻る
         </Link>
@@ -214,7 +219,7 @@ export default async function WorkPage({ params }: Props) {
    部品
    ========================================================================== */
 
-function SpecRow({
+function MetaItem({
   label,
   children,
 }: {
@@ -222,9 +227,11 @@ function SpecRow({
   children: React.ReactNode;
 }) {
   return (
-    <div className="grid grid-cols-1 gap-x-6 border-b border-rule-faint py-4 sm:grid-cols-[7rem_minmax(0,1fr)] sm:items-baseline">
-      <dt className="label pt-0.5 text-ink-faint">{label}</dt>
-      <dd className="mt-2 min-w-0 text-sm sm:mt-0">{children}</dd>
+    <div className="min-w-0">
+      <dt className="label text-fg-faint">{label}</dt>
+      <dd className="mt-4 text-sm leading-relaxed break-words text-fg">
+        {children}
+      </dd>
     </div>
   );
 }
@@ -237,35 +244,31 @@ function NeighborCell({
   direction: "prev" | "next";
 }) {
   const isNext = direction === "next";
-  const alignment = isNext
-    ? "sm:pl-6 sm:text-right sm:border-l sm:border-rule-faint"
-    : "sm:pr-6";
 
   if (!work) {
     // 片方が無くても段が崩れないよう、空の枡を残しておく。
-    return (
-      <div className={`hidden py-6 sm:block ${alignment}`} aria-hidden="true">
-        <span className="label text-ink-faint/50">
-          {isNext ? "Next" : "Previous"}
-        </span>
-        <p className="jp-serif mt-2 text-sm text-ink-faint/50">—</p>
-      </div>
-    );
+    return <div className="hidden py-14 sm:block" aria-hidden="true" />;
   }
 
   return (
     <Link
       href={`/works/${work.slug}`}
-      className={`group block border-b border-rule-faint py-6 sm:border-b-0 ${alignment}`}
+      className={`group block border-b border-line py-12 sm:border-b-0 sm:py-16 ${
+        isNext ? "sm:pl-10 sm:text-right" : "sm:pr-10"
+      }`}
     >
-      <span className="label text-vermilion">
-        {isNext ? "Next →" : "← Previous"}
+      <span className="label text-fg-faint transition-colors duration-500 group-hover:text-fg-muted">
+        {isNext ? "Next" : "Previous"}
       </span>
-      <p className="display mt-2 break-words text-2xl text-ink transition-colors group-hover:text-vermilion sm:text-3xl">
+      <p
+        className={`display-soft mt-4 break-words text-[clamp(1.75rem,5vw,3rem)] text-fg-muted transition-all duration-500 ease-[var(--ease-out-expo)] group-hover:text-fg ${
+          isNext ? "group-hover:translate-x-1.5" : "group-hover:-translate-x-1.5"
+        }`}
+      >
         {work.title}
       </p>
       {work.subtitle ? (
-        <p className="jp-serif mt-1 text-xs text-ink-muted">{work.subtitle}</p>
+        <p className="mt-3 text-xs text-fg-faint">{work.subtitle}</p>
       ) : null}
     </Link>
   );

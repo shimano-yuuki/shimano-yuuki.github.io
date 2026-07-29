@@ -4,7 +4,7 @@
  * Next.js の opengraph-image.tsx（ファイル規約）は、静的書き出しすると
  * 拡張子なしのファイルになる。GitHub Pages は拡張子で Content-Type を
  * 決めるため、そのままだと SNS がサムネイルとして認識してくれない。
- * そこでビルド前にここで .png として書き出し、layout.tsx から参照している。
+ * そこでここで .png として書き出し、layout.tsx から参照している。
  *
  * 名前や肩書きを変えたら `npm run og` で作り直すこと。
  */
@@ -13,10 +13,11 @@ import path from "node:path";
 import { ImageResponse } from "next/og";
 import { site } from "../src/lib/site";
 
-const PAPER = "#F4F1EA";
-const INK = "#14110F";
-const INK_MUTED = "#5B554C";
-const VERMILION = "#C8452E";
+const VOID = "#000000";
+const FG = "#ffffff";
+const FG_MUTED = "#8a8a8a";
+const FG_FAINT = "#5a5a5a";
+const LINE = "#1f1f1f";
 
 const SIZE = { width: 1200, height: 630 };
 
@@ -29,32 +30,25 @@ function Plate() {
         display: "flex",
         flexDirection: "column",
         justifyContent: "space-between",
-        backgroundColor: PAPER,
-        color: INK,
-        padding: "64px 72px",
+        backgroundColor: VOID,
+        color: FG,
+        padding: "56px 64px",
       }}
     >
-      {/* 天の罫。太罫＋細罫の二重罫。 */}
-      <div style={{ display: "flex", flexDirection: "column" }}>
-        <div style={{ height: 3, backgroundColor: INK }} />
-        <div style={{ height: 1, marginTop: 4, backgroundColor: INK }} />
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            marginTop: 20,
-            fontSize: 20,
-            letterSpacing: "0.22em",
-            textTransform: "uppercase",
-            color: INK_MUTED,
-          }}
-        >
-          <div style={{ display: "flex" }}>{site.name}</div>
-          <div style={{ display: "flex" }}>Portfolio &amp; Journal</div>
-        </div>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          fontSize: 19,
+          letterSpacing: "0.2em",
+          textTransform: "uppercase",
+          color: FG_MUTED,
+        }}
+      >
+        <div style={{ display: "flex" }}>{site.name}</div>
+        <div style={{ display: "flex" }}>Portfolio &amp; Journal</div>
       </div>
 
-      {/* 中央左寄せの誌名 */}
       <div
         style={{
           display: "flex",
@@ -65,9 +59,10 @@ function Plate() {
         <div
           style={{
             display: "flex",
-            fontSize: 110,
-            lineHeight: 1.05,
-            letterSpacing: "-0.02em",
+            fontSize: 132,
+            fontWeight: 800,
+            lineHeight: 1,
+            letterSpacing: "-0.045em",
           }}
         >
           {site.fullName}
@@ -75,45 +70,34 @@ function Plate() {
         <div
           style={{
             display: "flex",
-            marginTop: 24,
-            fontSize: 30,
-            letterSpacing: "0.16em",
+            marginTop: 26,
+            fontSize: 27,
+            letterSpacing: "0.14em",
             textTransform: "uppercase",
-            color: INK_MUTED,
+            color: FG_MUTED,
           }}
         >
           {site.role}
         </div>
       </div>
 
-      {/* 地の罫と、右下の朱ラベル */}
       <div style={{ display: "flex", flexDirection: "column" }}>
-        <div style={{ height: 1, backgroundColor: INK }} />
+        <div style={{ height: 1, backgroundColor: LINE }} />
         <div
           style={{
             display: "flex",
             justifyContent: "space-between",
-            alignItems: "center",
             marginTop: 20,
-            fontSize: 20,
-            letterSpacing: "0.2em",
+            fontSize: 19,
+            letterSpacing: "0.18em",
             textTransform: "uppercase",
-            color: INK_MUTED,
+            color: FG_FAINT,
           }}
         >
           <div style={{ display: "flex" }}>
             {site.url.replace(/^https?:\/\//, "")}
           </div>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              color: VERMILION,
-              letterSpacing: "0.24em",
-            }}
-          >
-            {`EST. ${site.established}`}
-          </div>
+          <div style={{ display: "flex" }}>{`Est. ${site.established}`}</div>
         </div>
       </div>
     </div>

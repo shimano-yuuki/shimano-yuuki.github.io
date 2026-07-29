@@ -1,32 +1,28 @@
 import Link from "next/link";
 import { navigation, site } from "@/lib/site";
 
-/**
- * 誌面の奥付。奥付らしく、細かい情報を小さく詰める。
- */
 export function Footer() {
   return (
-    <footer className="mt-24 bg-ink text-paper">
-      <div className="spread py-14">
-        <div className="grid gap-10 md:grid-cols-[1.2fr_1fr_1fr]">
+    <footer className="mt-32 border-t border-line">
+      <div className="measure py-16">
+        <div className="grid gap-12 md:grid-cols-[1.4fr_1fr_1fr]">
           <div>
-            <p className="display text-4xl leading-none">{site.name}</p>
-            <p className="jp-serif mt-3 text-sm text-paper/70">
-              {site.nameJa} — {site.role}
+            <p className="display text-[clamp(2.5rem,7vw,4.5rem)] leading-none">
+              {site.name}
             </p>
-            <p className="mt-4 max-w-xs text-sm leading-relaxed text-paper/60">
-              {site.tagline}
+            <p className="mt-4 text-sm text-fg-muted">
+              {site.nameJa} — {site.role}
             </p>
           </div>
 
           <nav>
-            <p className="label mb-3 text-paper/40">Contents</p>
-            <ul className="space-y-1.5">
+            <p className="label mb-4 text-fg-faint">Index</p>
+            <ul className="space-y-2">
               {navigation.map((item) => (
                 <li key={item.href}>
                   <Link
                     href={item.href}
-                    className="text-sm text-paper/80 transition-colors hover:text-vermilion"
+                    className="underline-sweep text-sm text-fg-muted transition-colors hover:text-fg"
                   >
                     {item.label}
                   </Link>
@@ -36,17 +32,17 @@ export function Footer() {
           </nav>
 
           <div>
-            <p className="label mb-3 text-paper/40">Elsewhere</p>
-            <ul className="space-y-1.5">
+            <p className="label mb-4 text-fg-faint">Elsewhere</p>
+            <ul className="space-y-2">
               {site.links.map((link) => (
                 <li key={link.label}>
                   <a
                     href={link.href}
                     target={link.href.startsWith("http") ? "_blank" : undefined}
                     rel="noreferrer"
-                    className="text-sm text-paper/80 transition-colors hover:text-vermilion"
+                    className="underline-sweep text-sm text-fg-muted transition-colors hover:text-fg"
                   >
-                    {link.label} ↗
+                    {link.label}
                   </a>
                 </li>
               ))}
@@ -55,7 +51,7 @@ export function Footer() {
                     Next が存在しない RSC ペイロードを先読みして 404 になる。 */}
                 <a
                   href="/feed.xml"
-                  className="text-sm text-paper/80 transition-colors hover:text-vermilion"
+                  className="underline-sweep text-sm text-fg-muted transition-colors hover:text-fg"
                 >
                   RSS
                 </a>
@@ -64,11 +60,11 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="mt-12 flex flex-wrap items-center justify-between gap-3 border-t border-paper/20 pt-5">
-          <p className="label text-paper/40">
-            © {site.established}— {site.fullName}
+        <div className="mt-16 flex flex-wrap items-center justify-between gap-3 border-t border-line pt-6">
+          <p className="label text-fg-faint">
+            © {site.established} {site.fullName}
           </p>
-          <p className="label text-paper/40">Printed on the web</p>
+          <p className="label text-fg-faint">Built with WebGL</p>
         </div>
       </div>
     </footer>

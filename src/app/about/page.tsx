@@ -1,5 +1,5 @@
 /**
- * About — 誌面の「プロフィール」ページ。
+ * About — プロフィールページ。
  *
  * ============================================================
  *  差し替えるのはこのファイルの上半分だけで済むようにしてある。
@@ -16,9 +16,9 @@
 
 import type { Metadata } from "next";
 import { Reveal } from "@/components/motion/Reveal";
-import { Rule } from "@/components/ui/Rule";
-import { SectionHead } from "@/components/ui/SectionHead";
+import { SplitHeading } from "@/components/motion/SplitHeading";
 import { site } from "@/lib/site";
+import { SectionMark } from "./_components/SectionMark";
 
 export const metadata: Metadata = {
   title: "About",
@@ -105,49 +105,66 @@ const colophon = [
   { term: "Hosting", value: "Vercel" },
 ];
 
+/* ---------------------------------------------------------------
+   連絡先。site.links に、このサイト固有の RSS を足して並べる。
+   --------------------------------------------------------------- */
+
+const contacts = [
+  ...site.links.map((link) => ({ label: link.label, href: link.href })),
+  { label: "RSS", href: "/feed.xml" },
+];
+
 /* ========================================================================= */
 
 export default function AboutPage() {
   return (
-    <div className="spread pb-8">
+    <div className="measure pb-32 sm:pb-48">
       {/* 扉 */}
-      <Reveal as="header" className="pt-12 pb-10 sm:pt-20 sm:pb-14">
-        <p className="label text-ink-faint">
-          Est. {site.established} — {site.name}
-        </p>
-        <div className="mt-5 flex flex-wrap items-baseline gap-x-6 gap-y-2">
-          <h1 className="display text-[clamp(3.25rem,15vw,8.5rem)] leading-none">
-            About
-          </h1>
-          <p className="jp-serif text-sm text-ink-muted">自己紹介</p>
-        </div>
-        <p className="jp-serif mt-6 max-w-xl text-base leading-loose text-ink-muted">
-          {site.tagline}
-        </p>
-      </Reveal>
+      <header className="pt-28 pb-24 sm:pt-40 sm:pb-36">
+        <Reveal>
+          <p className="label text-fg-faint">
+            {site.name} — Est. {site.established}
+          </p>
+        </Reveal>
+
+        <SplitHeading
+          as="h1"
+          lines={["About"]}
+          className="display mt-10 text-[clamp(3rem,12vw,11rem)]"
+        />
+
+        <Reveal className="mt-12 flex flex-wrap items-baseline gap-x-10 gap-y-4">
+          <p className="max-w-md text-base leading-loose text-fg-muted">
+            {site.tagline}
+          </p>
+          <span className="label text-fg-faint">自己紹介</span>
+        </Reveal>
+      </header>
 
       {/* プロフィール */}
-      <Reveal as="section" className="pt-4">
-        <SectionHead index="01" title="Profile" titleJa="人物" />
+      <Reveal as="section">
+        <SectionMark index="01" title="Profile" titleJa="人物" />
 
-        <div className="mt-8 grid gap-8 md:grid-cols-[16rem_1fr] md:gap-12">
-          {/* 名前の柱 */}
-          <div className="border-t border-rule pt-4 md:border-t-0 md:pt-0">
-            <p className="display text-[clamp(1.75rem,6vw,2.5rem)] leading-tight">
+        <div className="mt-14 grid gap-14 md:grid-cols-[minmax(0,1fr)_minmax(0,1.35fr)] md:gap-20">
+          {/* 名前 */}
+          <div>
+            <p className="display text-[clamp(2.25rem,8vw,4rem)]">
               {site.fullName}
             </p>
-            <p className="jp-serif mt-2 text-lg">{site.nameJa}</p>
-            <p className="label mt-4 text-vermilion">{site.role}</p>
+            <p className="mt-6 text-lg text-fg-muted">{site.nameJa}</p>
+            <p className="label mt-3 text-fg-faint">{site.role}</p>
           </div>
 
           {/* 本文 */}
-          <div className="border-t border-rule-faint pt-6 md:border-t-0 md:pt-0">
+          <div>
             {intro.map((paragraph, index) => (
               <p
                 key={index}
-                className={`text-[0.9375rem] leading-loose text-ink ${
-                  index === 0 ? "" : "mt-6"
-                }`}
+                className={
+                  index === 0
+                    ? "text-[1.0625rem] leading-[2.1] text-fg"
+                    : "mt-8 text-[0.9375rem] leading-[2.1] text-fg-muted"
+                }
               >
                 {paragraph}
               </p>
@@ -157,47 +174,49 @@ export default function AboutPage() {
       </Reveal>
 
       {/* 技術 */}
-      <Reveal as="section" className="pt-20">
-        <SectionHead index="02" title="Skills" titleJa="技術" />
+      <Reveal as="section" className="pt-32 sm:pt-44">
+        <SectionMark index="02" title="Skills" titleJa="技術" />
 
-        <dl className="mt-8 border-t border-rule">
+        <div className="mt-14 grid gap-16 sm:grid-cols-2 sm:gap-x-16 sm:gap-y-20">
           {skills.map((group) => (
-            <div
-              key={group.area}
-              className="grid gap-x-10 gap-y-2 border-b border-rule-faint py-5 sm:grid-cols-[12rem_1fr]"
-            >
-              <dt className="flex items-baseline gap-3">
-                <span className="label text-vermilion">{group.area}</span>
-                <span className="jp-serif text-xs text-ink-faint">
+            <div key={group.area}>
+              <div className="flex items-baseline gap-4">
+                <span className="label text-fg-faint">{group.area}</span>
+                <span className="text-[0.6875rem] text-fg-faint">
                   {group.areaJa}
                 </span>
-              </dt>
-              <dd className="flex flex-wrap items-baseline gap-x-6 gap-y-2">
+              </div>
+              <ul className="mt-6 flex flex-wrap items-baseline gap-x-8 gap-y-3">
                 {group.items.map((item) => (
-                  <span key={item} className="text-sm text-ink">
+                  <li
+                    key={item}
+                    className="display-soft text-[clamp(1.25rem,4.5vw,1.875rem)]"
+                  >
                     {item}
-                  </span>
+                  </li>
                 ))}
-              </dd>
+              </ul>
             </div>
           ))}
-        </dl>
+        </div>
       </Reveal>
 
       {/* 年表 */}
-      <Reveal as="section" className="pt-20">
-        <SectionHead index="03" title="Timeline" titleJa="年譜" />
+      <Reveal as="section" className="pt-32 sm:pt-44">
+        <SectionMark index="03" title="Timeline" titleJa="年譜" />
 
-        <ol className="mt-8 border-t border-rule">
+        <ol className="mt-14">
           {timeline.map((entry) => (
             <li
               key={entry.year}
-              className="grid gap-x-10 gap-y-2 border-b border-rule-faint py-6 sm:grid-cols-[12rem_1fr]"
+              className="grid gap-x-12 gap-y-4 py-10 first:pt-0 sm:grid-cols-[7rem_minmax(0,1fr)]"
             >
-              <p className="label text-ink-faint">{entry.year}</p>
+              <p className="label pt-1 text-fg-faint">{entry.year}</p>
               <div>
-                <p className="jp-serif text-base leading-snug">{entry.title}</p>
-                <p className="mt-2 text-sm leading-loose text-ink-muted">
+                <h3 className="display-soft text-[clamp(1.375rem,5vw,2.125rem)]">
+                  {entry.title}
+                </h3>
+                <p className="mt-5 max-w-xl text-sm leading-loose text-fg-muted">
                   {entry.body}
                 </p>
               </div>
@@ -207,53 +226,41 @@ export default function AboutPage() {
       </Reveal>
 
       {/* 連絡先 */}
-      <Reveal as="section" className="pt-20">
-        <SectionHead index="04" title="Contact" titleJa="連絡先" />
+      <Reveal as="section" className="pt-32 sm:pt-44">
+        <SectionMark index="04" title="Contact" titleJa="連絡先" />
 
-        <ul className="mt-8 border-t border-rule">
-          {site.links.map((link) => (
-            <li key={link.label} className="border-b border-rule-faint">
+        <ul className="mt-14">
+          {contacts.map((contact) => (
+            <li key={contact.label} className="border-b border-line">
               <a
-                href={link.href}
-                target={link.href.startsWith("http") ? "_blank" : undefined}
+                href={contact.href}
+                target={contact.href.startsWith("http") ? "_blank" : undefined}
                 rel="noreferrer"
-                className="group flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1 py-5"
+                className="group flex flex-wrap items-baseline gap-x-8 gap-y-2 py-8 sm:py-10"
               >
-                <span className="display text-2xl transition-colors group-hover:text-vermilion sm:text-3xl">
-                  {link.label}
+                <span className="display text-[clamp(2.25rem,10vw,5rem)] text-fg-muted transition-[color,transform] duration-700 ease-[var(--ease-out-expo)] group-hover:translate-x-3 group-hover:text-fg">
+                  {contact.label}
                 </span>
-                <span className="label min-w-0 break-all text-ink-muted">
-                  {link.href.replace(/^mailto:|^https?:\/\//, "")} ↗
+                <span className="label ml-auto min-w-0 break-all text-fg-faint transition-colors duration-500 ease-[var(--ease-out-expo)] group-hover:text-fg-muted">
+                  {contact.href.replace(/^mailto:|^https?:\/\//, "")} ↗
                 </span>
               </a>
             </li>
           ))}
-          <li className="border-b border-rule-faint">
-            <a
-              href="/feed.xml"
-              className="group flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1 py-5"
-            >
-              <span className="display text-2xl transition-colors group-hover:text-vermilion sm:text-3xl">
-                RSS
-              </span>
-              <span className="label min-w-0 break-all text-ink-muted">
-                feed.xml ↗
-              </span>
-            </a>
-          </li>
         </ul>
       </Reveal>
 
       {/* 奥付（このサイトの仕様） */}
-      <Reveal as="section" className="pt-20">
-        <Rule weight="hair" />
-        <div className="mt-6 grid gap-6 sm:grid-cols-[12rem_1fr] sm:gap-10">
-          <p className="label text-ink-faint">Colophon</p>
-          <dl className="flex flex-wrap gap-x-10 gap-y-3">
+      <Reveal as="footer" className="pt-32 sm:pt-44">
+        <div className="flex flex-wrap gap-x-16 gap-y-8 border-t border-line pt-6">
+          <p className="label text-fg-faint">Colophon</p>
+          <dl className="flex flex-wrap gap-x-12 gap-y-5">
             {colophon.map((row) => (
               <div key={row.term}>
-                <dt className="label text-ink-faint">{row.term}</dt>
-                <dd className="mt-1 text-sm text-ink-muted">{row.value}</dd>
+                <dt className="label text-fg-faint">{row.term}</dt>
+                <dd className="mt-2 font-mono text-[0.6875rem] tracking-wide text-fg-muted">
+                  {row.value}
+                </dd>
               </div>
             ))}
           </dl>

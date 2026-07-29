@@ -1,66 +1,55 @@
 import Link from "next/link";
-import { Rule } from "@/components/ui/Rule";
-import { site } from "@/lib/site";
+import { navigation, site } from "@/lib/site";
 
 /**
- * 404 — 落丁・乱丁ページ。
- * 誌面の事故を刷ってしまったときの断り書き、というつもりで組んでいる。
+ * 404 — 黒地に巨大な数字だけ。
+ * 説明は最小限にして、戻り道のリンクを大きく置いている。
  */
 
-const routes = [
-  { label: "Index", labelJa: "トップ", href: "/" },
-  { label: "Works", labelJa: "作品", href: "/works" },
-  { label: "Journal", labelJa: "記録", href: "/blog" },
-];
+/** 戻り先。About 自身は出さず、主要な 3 つだけに絞る。 */
+const routes = navigation.filter((item) => item.href !== "/about");
 
 export default function NotFound() {
   return (
-    <div className="spread py-24 sm:py-36">
-      <div className="max-w-3xl">
-        <p className="label text-vermilion">Error — Not Found</p>
+    <div className="measure flex min-h-[85svh] flex-col justify-center py-28 sm:py-40">
+      <p className="label text-fg-faint">Error — 404</p>
 
-        <p className="display mt-6 text-[clamp(5rem,26vw,14rem)] leading-none">
-          404
-        </p>
+      <p className="display mt-8 text-[clamp(6rem,30vw,20rem)] sm:mt-12">404</p>
 
-        <Rule weight="double" className="mt-8" animated={false} />
+      <p className="mt-12 text-base text-fg-muted sm:mt-16">
+        ページが見つかりません。
+      </p>
+      <p className="mt-4 max-w-md text-sm leading-loose text-fg-faint">
+        お探しのページは移動したか、削除された可能性があります。
+        お手数ですが、下のリンクから入り直してください。
+      </p>
 
-        <h1 className="jp-serif mt-8 text-[clamp(1.25rem,5vw,1.875rem)] leading-relaxed">
-          このページは落丁のようです。
-        </h1>
+      <nav className="mt-20 sm:mt-28">
+        <ul>
+          {routes.map((route, index) => (
+            <li key={route.href} className="border-t border-line last:border-b">
+              <Link
+                href={route.href}
+                className="group flex flex-wrap items-baseline gap-x-6 gap-y-1 py-7 sm:py-8"
+              >
+                <span className="label w-8 flex-none text-fg-faint transition-colors duration-500 group-hover:text-fg">
+                  {String(index + 1).padStart(2, "0")}
+                </span>
+                <span className="display text-[clamp(1.875rem,8vw,3.5rem)] text-fg-muted transition-[color,transform] duration-700 ease-[var(--ease-out-expo)] group-hover:translate-x-3 group-hover:text-fg">
+                  {route.label}
+                </span>
+                <span className="ml-auto text-[0.6875rem] text-fg-faint">
+                  {route.labelJa}
+                </span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </nav>
 
-        <p className="mt-5 max-w-lg text-sm leading-loose text-ink-muted">
-          お探しの頁は綴じられていないか、刷り直しの際に差し替えられました。
-          お手数ですが、下の目次から入り直してください。
-        </p>
-
-        <nav className="mt-12 border-t border-rule">
-          <ul>
-            {routes.map((route, index) => (
-              <li key={route.href} className="border-b border-rule-faint">
-                <Link
-                  href={route.href}
-                  className="group flex flex-wrap items-baseline gap-x-5 gap-y-1 py-5"
-                >
-                  <span className="label w-8 shrink-0 text-vermilion">
-                    {String(index + 1).padStart(2, "0")}
-                  </span>
-                  <span className="display text-[clamp(1.75rem,8vw,3rem)] leading-none transition-colors group-hover:text-vermilion">
-                    {route.label}
-                  </span>
-                  <span className="jp-serif ml-auto text-xs text-ink-muted">
-                    {route.labelJa}
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </nav>
-
-        <p className="label mt-12 text-ink-faint">
-          {site.name} — Est. {site.established}
-        </p>
-      </div>
+      <p className="label mt-20 text-fg-faint sm:mt-28">
+        {site.name} — Est. {site.established}
+      </p>
     </div>
   );
 }

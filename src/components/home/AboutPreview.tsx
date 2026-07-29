@@ -1,43 +1,31 @@
 import Link from "next/link";
 import { Reveal } from "@/components/motion/Reveal";
-import { SectionHead } from "@/components/ui/SectionHead";
 import { site } from "@/lib/site";
 
-/**
- * トップの自己紹介欄。詳細は /about に逃がし、ここは導入の数行だけ。
- */
 export function AboutPreview() {
   return (
-    <section className="spread py-14">
-      <SectionHead
-        index="03"
-        title="About"
-        titleJa="自己紹介"
-        action={{ label: "Profile", href: "/about" }}
-      />
+    <section className="measure py-28 sm:py-36">
+      <Reveal className="grid gap-10 md:grid-cols-12">
+        <h2 className="label text-fg-faint md:col-span-3">About</h2>
 
-      <Reveal className="mt-10 grid gap-8 md:grid-cols-12">
-        <div className="md:col-span-4">
-          <p className="display text-4xl leading-none">{site.fullName}</p>
-          <p className="jp-serif mt-2 text-sm text-ink-muted">
-            {site.nameJa} — {site.role}
+        <div className="md:col-span-8 md:col-start-5">
+          <p className="display-soft text-[clamp(1.5rem,3.4vw,2.75rem)] text-fg">
+            モバイルアプリを Flutter で、
+            <br />
+            Web を TypeScript でつくっています。
           </p>
-        </div>
 
-        <div className="md:col-span-7 md:col-start-6">
-          <p className="jp-serif text-lg leading-loose">
-            モバイルアプリを Flutter で、Web を TypeScript でつくっています。
-          </p>
-          <p className="mt-5 leading-loose text-ink-muted">
+          <p className="mt-8 max-w-xl leading-loose text-fg-muted">
             完成したものを並べるだけでなく、途中で何を考え、どこで詰まったかも
             一緒に残すようにしています。あとから自分が読み返したときに、
             一番役に立つのがそこだからです。
           </p>
+
           <Link
             href="/about"
-            className="label mt-6 inline-block border-b border-vermilion pb-1 text-vermilion"
+            className="label underline-sweep mt-10 inline-block text-fg transition-opacity hover:opacity-70"
           >
-            もっと読む →
+            {site.fullName} について
           </Link>
         </div>
       </Reveal>

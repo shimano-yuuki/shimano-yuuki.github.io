@@ -13,18 +13,24 @@ type PostNavLinkProps = {
 };
 
 function PostNavLink({ post, label, align }: PostNavLinkProps) {
+  const toEnd = align === "end";
+
   return (
     <Link
       href={`/blog/${post.slug}`}
-      className={`group block flex-1 border border-rule-faint p-5 transition-colors hover:border-rule ${
-        align === "end" ? "sm:text-right" : ""
-      }`}
+      className={`group block ${toEnd ? "sm:text-right" : ""}`}
     >
-      <span className="label text-vermilion">{label}</span>
-      <span className="jp-serif mt-2 block text-base leading-snug transition-colors group-hover:text-vermilion">
+      <span className="label text-fg-faint transition-colors duration-500 group-hover:text-fg-muted">
+        {label}
+      </span>
+      <span
+        className={`font-jp mt-4 block text-lg leading-snug font-medium text-fg-muted transition-[color,transform] duration-500 ease-[var(--ease-out-expo)] group-hover:text-fg sm:text-xl ${
+          toEnd ? "group-hover:-translate-x-2" : "group-hover:translate-x-2"
+        }`}
+      >
         {post.title}
       </span>
-      <time dateTime={post.date} className="label mt-3 block text-ink-faint">
+      <time dateTime={post.date} className="label mt-4 block text-fg-faint">
         {formatDate(post.date)}
       </time>
     </Link>
@@ -41,17 +47,17 @@ export function PostNav({ newer, older }: PostNavProps) {
   return (
     <nav
       aria-label="前後の記事"
-      className="mt-6 flex flex-col gap-4 sm:flex-row sm:gap-6"
+      className="grid gap-12 sm:grid-cols-2 sm:gap-16"
     >
       {newer ? (
         <PostNavLink post={newer} label="← Newer" align="start" />
       ) : (
-        <div className="hidden flex-1 sm:block" aria-hidden="true" />
+        <div className="hidden sm:block" aria-hidden="true" />
       )}
       {older ? (
         <PostNavLink post={older} label="Older →" align="end" />
       ) : (
-        <div className="hidden flex-1 sm:block" aria-hidden="true" />
+        <div className="hidden sm:block" aria-hidden="true" />
       )}
     </nav>
   );

@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Reveal } from "@/components/motion/Reveal";
-import { CoverPlate } from "@/components/ui/CoverPlate";
+import { StackFilter } from "./StackFilter";
+import { WorkPlate } from "./WorkPlate";
 
 /**
  * 一覧に必要な分だけをサーバーから受け取る。
@@ -26,25 +27,6 @@ type WorksIndexProps = {
   tags: string[];
 };
 
-/** 誌面の組み。1件目は扉、以降は 7:5 の非対称2段組を左右入れ替えながら送る。 */
-type Variant = "lead" | "large" | "small";
-
-function variantOf(position: number): Variant {
-  if (position === 0) return "lead";
-  const rest = position - 1;
-  const pair = Math.floor(rest / 2);
-  const slot = rest % 2;
-  // 偶数ペアは「大→小」、奇数ペアは「小→大」。段ごとに重心が振れる。
-  const isLarge = pair % 2 === 0 ? slot === 0 : slot === 1;
-  return isLarge ? "large" : "small";
-}
-
-const SPAN: Record<Variant, string> = {
-  lead: "md:col-span-12",
-  large: "md:col-span-7",
-  small: "md:col-span-5 md:mt-20",
-};
-
 export function WorksIndex({ works, tags }: WorksIndexProps) {
   const [active, setActive] = useState<string | null>(null);
 
@@ -55,189 +37,106 @@ export function WorksIndex({ works, tags }: WorksIndexProps) {
 
   return (
     <div>
-      {tags.length > 0 ? (
-        <div className="mt-14 border-t border-rule pt-5">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-baseline sm:gap-6">
-            <h2 className="label shrink-0 text-ink-faint">Filter by Stack</h2>
-            <ul className="flex flex-wrap gap-2">
-              <li>
-                <FilterButton
-                  label="All"
-                  active={active === null}
-                  onClick={() => setActive(null)}
-                />
-              </li>
-              {tags.map((tag) => (
-                <li key={tag}>
-                  <FilterButton
-                    label={tag}
-                    active={active === tag}
-                    onClick={() => setActive(active === tag ? null : tag)}
-                  />
-                </li>
-              ))}
-            </ul>
-          </div>
-          <p className="label mt-4 text-ink-faint" aria-live="polite">
-            {filtered.length} / {works.length} Works
+      <StackFilter
+        tags={tags}
+        active={active}
+        onChange={setActive}
+        shown={filtered.length}
+        total={works.length}
+      />
+
+      {filtered.length === 0 ? (
+        <div className="mt-24 flex flex-col items-start gap-8 bg-surface px-6 py-24 sm:px-12">
+          <p className="display text-[clamp(2rem,7vw,4rem)] text-fg/30">
+            No Works
           </p>
+          <p className="text-sm leading-relaxed text-fg-muted">
+            この技術タグに当てはまる作品はまだありません。
+          </p>
+          <button
+            type="button"
+            onClick={() => setActive(null)}
+            className="label bg-fg px-5 py-3 text-void transition-all duration-500 ease-[var(--ease-out-expo)] hover:px-7"
+          >
+            Show All
+          </button>
         </div>
-      ) : null}
-
-      {/* Reveal は絞り込みで出し入れしない。中身だけ差し替える。 */}
-      <Reveal className="mt-12">
-        {filtered.length === 0 ? (
-          <div className="border-y border-rule py-20 text-center">
-            <p className="display text-3xl text-ink/60">No Works Found</p>
-            <p className="jp-serif mt-4 text-sm text-ink-muted">
-              この技術タグに当てはまる作品はまだありません。
-            </p>
-            <button
-              type="button"
-              onClick={() => setActive(null)}
-              className="label mt-6 border border-rule px-4 py-2 text-ink transition-colors hover:bg-vermilion hover:text-paper"
-            >
-              Show All →
-            </button>
-          </div>
-        ) : (
-          <ul className="grid grid-cols-1 gap-y-16 md:grid-cols-12 md:gap-x-8 md:gap-y-16">
-            {filtered.map((work, position) => {
-              const variant = variantOf(position);
-              return (
-                <li key={work.slug} className={SPAN[variant]}>
-                  <WorkCard work={work} variant={variant} />
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </Reveal>
-    </div>
-  );
-}
-
-function FilterButton({
-  label,
-  active,
-  onClick,
-}: {
-  label: string;
-  active: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={active}
-      className={`label border px-3 py-1.5 transition-colors ${
-        active
-          ? "border-ink bg-ink text-paper"
-          : "border-rule-faint text-ink-muted hover:border-rule hover:text-vermilion"
-      }`}
-    >
-      {label}
-    </button>
-  );
-}
-
-const COVER_ASPECT: Record<Variant, string> = {
-  lead: "aspect-[4/3] md:aspect-[16/10]",
-  large: "aspect-[4/3]",
-  small: "aspect-[4/3] md:aspect-[4/5]",
-};
-
-const COVER_SIZES: Record<Variant, string> = {
-  lead: "(min-width: 768px) 56vw, 100vw",
-  large: "(min-width: 768px) 46vw, 100vw",
-  small: "(min-width: 768px) 32vw, 100vw",
-};
-
-const TITLE_SIZE: Record<Variant, string> = {
-  lead: "text-[clamp(2rem,1.2rem+3.4vw,3.75rem)]",
-  large: "text-[clamp(1.75rem,1.2rem+1.8vw,2.5rem)]",
-  small: "text-[clamp(1.5rem,1.1rem+1.2vw,2rem)]",
-};
-
-function WorkCard({ work, variant }: { work: WorkCardItem; variant: Variant }) {
-  const meta = (
-    <div className={variant === "lead" ? "md:self-end md:pb-1" : ""}>
-      <div className="flex items-baseline justify-between gap-4 border-t border-rule pt-3">
-        <span className="label text-vermilion">{work.index}</span>
-        <time dateTime={work.date} className="label text-ink-faint">
-          {work.dateLabel}
-        </time>
-      </div>
-
-      <h3
-        className={`display mt-3 break-words text-ink transition-colors group-hover:text-vermilion ${TITLE_SIZE[variant]}`}
-      >
-        {work.title}
-      </h3>
-
-      {work.subtitle ? (
-        <p className="jp-serif mt-2 text-sm text-ink-muted">{work.subtitle}</p>
-      ) : null}
-
-      <p className="mt-3 max-w-[34rem] text-sm leading-relaxed text-ink-muted">
-        {work.summary}
-      </p>
-
-      {work.stack.length > 0 ? (
-        <ul className="mt-4 flex flex-wrap gap-x-2 gap-y-2">
-          {work.stack.map((item) => (
-            <li
-              key={item}
-              className="label border border-rule-faint px-2 py-1 text-ink-faint"
-            >
-              {item}
+      ) : (
+        <ul className="mt-24 flex flex-col gap-y-28 md:mt-32 md:gap-y-44">
+          {filtered.map((work, position) => (
+            <li key={work.slug}>
+              <Reveal>
+                <WorkRow work={work} flip={position % 2 === 1} />
+              </Reveal>
             </li>
           ))}
         </ul>
-      ) : null}
-
-      <span className="label mt-5 inline-block text-ink-muted transition-colors group-hover:text-vermilion">
-        Read Case →
-      </span>
+      )}
     </div>
   );
+}
 
+/** 全幅の行。段ごとに面と文字の左右を入れ替えて、送りに揺れを出す。 */
+function WorkRow({ work, flip }: { work: WorkCardItem; flip: boolean }) {
   return (
     <article className="group">
       <Link
         href={`/works/${work.slug}`}
-        className="block focus-visible:outline-offset-6"
+        className="block outline-offset-8 focus-visible:outline-offset-8"
       >
-        {variant === "lead" ? (
-          <div className="md:grid md:grid-cols-12 md:gap-8">
-            <div className="md:col-span-7">
-              <CoverPlate
-                src={work.cover || undefined}
-                alt={work.title}
-                label={work.title}
-                index={work.index}
-                sizes={COVER_SIZES.lead}
-                className={`${COVER_ASPECT.lead} w-full`}
-              />
-            </div>
-            <div className="mt-6 md:col-span-5 md:mt-0 md:flex md:flex-col md:justify-end">
-              {meta}
-            </div>
-          </div>
-        ) : (
-          <>
-            <CoverPlate
+        <div className="grid gap-8 md:grid-cols-12 md:items-center md:gap-14">
+          <div className={`md:col-span-7 ${flip ? "md:order-2" : ""}`}>
+            <WorkPlate
               src={work.cover || undefined}
-              alt={work.title}
-              label={work.title}
+              title={work.title}
               index={work.index}
-              sizes={COVER_SIZES[variant]}
-              className={`${COVER_ASPECT[variant]} w-full`}
+              sizes="(min-width: 768px) 55vw, 100vw"
+              className="aspect-[4/3] w-full md:aspect-[16/10]"
             />
-            <div className="mt-6">{meta}</div>
-          </>
-        )}
+          </div>
+
+          <div className={`md:col-span-5 ${flip ? "md:order-1" : ""}`}>
+            <div className="flex items-baseline gap-5">
+              <span className="label text-fg-faint">{work.index}</span>
+              <time dateTime={work.date} className="label text-fg-faint">
+                {work.dateLabel}
+              </time>
+            </div>
+
+            <h3 className="display mt-6 break-words text-[clamp(2.25rem,6.5vw,3.75rem)] text-fg-muted transition-all duration-500 ease-[var(--ease-out-expo)] group-hover:translate-x-1.5 group-hover:text-fg">
+              {work.title}
+            </h3>
+
+            {work.subtitle ? (
+              <p className="mt-4 text-sm text-fg-muted">{work.subtitle}</p>
+            ) : null}
+
+            <p className="mt-5 max-w-[34rem] text-sm leading-relaxed text-fg-muted">
+              {work.summary}
+            </p>
+
+            {work.stack.length > 0 ? (
+              <ul className="mt-7 flex flex-wrap gap-x-5 gap-y-2">
+                {work.stack.map((item) => (
+                  <li
+                    key={item}
+                    className="label text-fg-faint transition-colors duration-500 group-hover:text-fg-muted"
+                  >
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+
+            {/* 行全体のホバーで反応させたいので、下線は自前で伸ばす。 */}
+            <span className="mt-9 inline-flex items-center gap-4">
+              <span className="label text-fg-muted transition-colors duration-500 group-hover:text-fg">
+                View Case
+              </span>
+              <span className="block h-px w-8 bg-fg-faint transition-all duration-700 ease-[var(--ease-out-expo)] group-hover:w-16 group-hover:bg-fg" />
+            </span>
+          </div>
+        </div>
       </Link>
     </article>
   );
