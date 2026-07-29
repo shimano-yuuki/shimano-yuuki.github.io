@@ -11,6 +11,12 @@ import {
   splatFragment,
   vorticityFragment,
 } from "./fluidShaders";
+import {
+  lightFragment,
+  overlayVertex,
+  particleFragment,
+  particleVertex,
+} from "./oceanShaders";
 
 type Quality = "high" | "low";
 
@@ -78,6 +84,11 @@ export class FluidSimulation {
   private textTexture: THREE.CanvasTexture;
   private textCanvas: HTMLCanvasElement;
 
+  /** 水の上に加算合成で重ねる層（光条・カースティクス・粒子）。 */
+  private overlayScene = new THREE.Scene();
+  private lightMaterial!: THREE.ShaderMaterial;
+  private particleMaterial!: THREE.ShaderMaterial;
+
   private settings: (typeof SETTINGS)[Quality];
   private width = 0;
   private height = 0;
@@ -138,6 +149,70 @@ export class FluidSimulation {
       this.materials.display,
     );
     this.scene.add(this.mesh);
+
+    this.buildOverlays(quality);
+  }
+
+  /**
+   * 水の上に重ねる層を組む。
+   * 光条とカースティクスは全画面クアッド1枚、気泡とマリンスノーは点群1つ。
+   * どちらも加算合成なので、水を暗くすることはない。
+   */
+  private buildOverlays(quality: Quality) {
+    this.lightMaterial = new THREE.ShaderMaterial({
+      vertexShader: overlayVertex,
+      fragmentShader: lightFragment,
+      uniforms: {
+        uTime: { value: 0 },
+        uDepth: { value: 0 },
+        uAspect: { value: 1 },
+        uTint: { value: new THREE.Color(0.78, 0.98, 1.0) },
+      },
+      transparent: true,
+      blending: THREE.AdditiveBlending,
+      depthTest: false,
+      depthWrite: false,
+    });
+    this.overlayScene.add(
+      new THREE.Mesh(new THREE.PlaneGeometry(2, 2), this.lightMaterial),
+    );
+
+    const count = quality === "high" ? 900 : 340;
+    const seeds = new Float32Array(count * 3);
+    const kinds = new Float32Array(count);
+    for (let i = 0; i < count; i += 1) {
+      seeds[i * 3] = Math.random();
+      seeds[i * 3 + 1] = Math.random();
+      seeds[i * 3 + 2] = Math.random();
+      // 半分を気泡、半分をマリンスノーにする
+      kinds[i] = i % 2 === 0 ? 0 : 1;
+    }
+
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute("aSeed", new THREE.BufferAttribute(seeds, 3));
+    geometry.setAttribute("aKind", new THREE.BufferAttribute(kinds, 1));
+    // 位置は頂点シェーダーが決めるが、three が境界計算に使うので入れておく
+    geometry.setAttribute("position", new THREE.BufferAttribute(seeds, 3));
+    geometry.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 10);
+
+    this.particleMaterial = new THREE.ShaderMaterial({
+      vertexShader: particleVertex,
+      fragmentShader: particleFragment,
+      uniforms: {
+        uTime: { value: 0 },
+        uDepth: { value: 0 },
+        uAspect: { value: 1 },
+        uPixelRatio: { value: 1 },
+        uBubbleTint: { value: new THREE.Color(0.75, 0.95, 1.0) },
+        uSnowTint: { value: new THREE.Color(0.82, 0.88, 0.95) },
+      },
+      transparent: true,
+      blending: THREE.AdditiveBlending,
+      depthTest: false,
+      depthWrite: false,
+    });
+
+    this.overlayScene.add(new THREE.Points(geometry, this.particleMaterial));
   }
 
   private createMaterials() {
@@ -455,6 +530,26 @@ export class FluidSimulation {
     display.uniforms.uTime.value = this.elapsed;
     display.uniforms.uReveal.value = this.reveal;
     this.blit(display, null);
+
+    // 水の上に光と粒子を加算で重ねる。ここでは画面を消さない。
+    const aspect = this.width / Math.max(this.height, 1);
+    const light = this.lightMaterial.uniforms;
+    light.uTime.value = this.elapsed;
+    light.uDepth.value = this.depth;
+    light.uAspect.value = aspect;
+    (light.uTint.value as THREE.Color).copy(
+      this.materials.display.uniforms.uWaterLight.value as THREE.Color,
+    );
+
+    const particles = this.particleMaterial.uniforms;
+    particles.uTime.value = this.elapsed;
+    particles.uDepth.value = this.depth;
+    particles.uAspect.value = aspect;
+    particles.uPixelRatio.value = this.renderer.getPixelRatio();
+
+    this.renderer.autoClear = false;
+    this.renderer.render(this.overlayScene, this.camera);
+    this.renderer.autoClear = true;
   }
 
   private loop = (timeMs: number) => {
@@ -528,6 +623,15 @@ export class FluidSimulation {
     this.textTexture.dispose();
     for (const material of Object.values(this.materials)) material.dispose();
     this.mesh.geometry.dispose();
+
+    // 重ねた層のジオメトリとマテリアルも解放する
+    this.overlayScene.traverse((object) => {
+      const withGeometry = object as Partial<THREE.Mesh>;
+      withGeometry.geometry?.dispose();
+    });
+    this.lightMaterial.dispose();
+    this.particleMaterial.dispose();
+
     this.renderer.dispose();
   }
 }
