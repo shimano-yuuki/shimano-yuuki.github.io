@@ -4,6 +4,7 @@ import "./globals.css";
 import { Footer } from "@/components/layout/Footer";
 import { Header } from "@/components/layout/Header";
 import { SmoothScroll } from "@/components/motion/SmoothScroll";
+import { ContentVeil } from "@/components/ocean/ContentVeil";
 import { DepthController } from "@/components/ocean/DepthController";
 import { DepthGauge } from "@/components/ocean/DepthGauge";
 import { OceanBackground } from "@/components/ocean/OceanBackground";
@@ -43,6 +44,7 @@ export default function RootLayout({
       <body className="flex min-h-full flex-col text-fg">
         {/* 海はレイアウトに置く。ページを移っても破棄されないので水が途切れない。 */}
         <OceanBackground />
+        <ContentVeil />
         <DepthController />
         <DepthGauge />
         <SmoothScroll>

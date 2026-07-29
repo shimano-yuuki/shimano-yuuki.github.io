@@ -13,9 +13,10 @@ export function Hero() {
         aria-hidden="true"
         className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-black/55 to-transparent"
       />
+      {/* 水面は明るいので、リード文の背後はここで確実に落とす */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-x-0 bottom-0 h-56 bg-gradient-to-t from-black/75 via-black/35 to-transparent"
+        className="pointer-events-none absolute inset-x-0 bottom-0 h-72 bg-gradient-to-t from-black/92 via-black/60 to-transparent"
       />
 
       {/* canvas には文字が無いので、見出しはここで持つ */}
@@ -25,13 +26,13 @@ export function Hero() {
 
       <div className="pointer-events-none absolute inset-0 flex flex-col justify-end">
         <div className="measure flex flex-wrap items-end justify-between gap-6 pb-10">
-          <p className="max-w-sm text-sm leading-relaxed text-white/80">
+          <p className="max-w-sm text-sm leading-relaxed text-white/95">
             {site.tagline}
             <br />
             つくったものと、つくる途中で考えたことを置いています。
           </p>
 
-          <p className="label flex items-center gap-3 text-white/55">
+          <p className="label flex items-center gap-3 text-white/80">
             Dive
             <span className="block h-px w-10 bg-white/40" />
           </p>

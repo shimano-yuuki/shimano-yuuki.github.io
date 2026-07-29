@@ -35,7 +35,7 @@ export function JournalPreview({ posts }: { posts: Post[] }) {
                 {post.title}
               </h3>
 
-              <p className="text-sm leading-relaxed text-fg-faint md:col-span-5">
+              <p className="text-sm leading-relaxed text-fg-muted md:col-span-5">
                 {post.excerpt}
               </p>
             </Link>

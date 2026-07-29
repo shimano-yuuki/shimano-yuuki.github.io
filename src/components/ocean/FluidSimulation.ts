@@ -106,6 +106,8 @@ export class FluidSimulation {
   private depth = 0;
   /** スクロールの勢い。水流として注ぎ込む。 */
   private flow = 0;
+  /** 本文の背後を落としている量（0〜1）。 */
+  private veil = 0;
 
   constructor({ canvas, text, quality = "high" }: FluidOptions) {
     this.text = text;
@@ -167,6 +169,7 @@ export class FluidSimulation {
         uDepth: { value: 0 },
         uAspect: { value: 1 },
         uTint: { value: new THREE.Color(0.78, 0.98, 1.0) },
+        uVeil: { value: 0 },
       },
       transparent: true,
       blending: THREE.AdditiveBlending,
@@ -512,6 +515,15 @@ export class FluidSimulation {
     this.flow = velocity;
   }
 
+  /**
+   * 本文の背後を落としている量を伝える。
+   * ベール（DOM の黒い膜）は加算合成で描く光条までは消せないので、
+   * 読む場面では光そのものをここで弱める。
+   */
+  setVeil(veil: number) {
+    this.veil = veil;
+  }
+
   /** 1フレームだけ描く。reduced-motion のときはこれだけ呼ぶ。 */
   renderStill() {
     this.seedDye();
@@ -537,6 +549,7 @@ export class FluidSimulation {
     light.uTime.value = this.elapsed;
     light.uDepth.value = this.depth;
     light.uAspect.value = aspect;
+    light.uVeil.value = this.veil;
     (light.uTint.value as THREE.Color).copy(
       this.materials.display.uniforms.uWaterLight.value as THREE.Color,
     );

@@ -137,7 +137,7 @@ export default function AboutPage() {
           <p className="max-w-md text-base leading-loose text-fg-muted">
             {site.tagline}
           </p>
-          <span className="label text-fg-faint">自己紹介</span>
+          <span className="label text-fg-muted">自己紹介</span>
         </Reveal>
       </header>
 

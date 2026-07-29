@@ -18,8 +18,14 @@ const state = {
   current: 0,
   /** 直近のスクロール速度。流体への外力に使う。 */
   velocity: 0,
+  /**
+   * 本文の背後を暗く落とす量（0〜1）。
+   * 1 のとき水は 14% ほどしか見えず、文字のコントラストが確保される。
+   */
+  veil: 0,
   /** 購読側へ通知した最後の値。 */
   notified: -1,
+  notifiedVeil: -1,
 };
 
 export const depthStore = {
@@ -46,6 +52,11 @@ export const depthStore = {
     return state.current;
   },
 
+  setVeil(value: number) {
+    state.veil = clamp01(value);
+    depthStore.notify();
+  },
+
   get(): number {
     return state.current;
   },
@@ -54,10 +65,17 @@ export const depthStore = {
     return state.velocity;
   },
 
+  getVeil(): number {
+    return state.veil;
+  },
+
   /** 表示が変わる程度に動いたときだけ通知して、無駄な再レンダーを避ける。 */
   notify() {
-    if (Math.abs(state.current - state.notified) < 0.002) return;
+    const depthMoved = Math.abs(state.current - state.notified) >= 0.002;
+    const veilMoved = Math.abs(state.veil - state.notifiedVeil) >= 0.004;
+    if (!depthMoved && !veilMoved) return;
     state.notified = state.current;
+    state.notifiedVeil = state.veil;
     for (const listener of listeners) listener(state.current);
   },
 

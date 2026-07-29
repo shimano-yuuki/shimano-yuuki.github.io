@@ -23,6 +23,14 @@ const BANDS: [prefix: string, band: DepthBand][] = [
   ["/", { base: 0.0, span: 0.55 }],
 ];
 
+/**
+ * 全画面のヒーローを持つページか。
+ * 持つページでは、最初の1画面ぶんは水をそのまま見せたいのでベールを敷かない。
+ */
+export function hasHero(pathname: string): boolean {
+  return pathname === "/" || pathname === "";
+}
+
 export function bandFor(pathname: string): DepthBand {
   // 末尾スラッシュの有無を吸収する（静的書き出しは /works/ 形式になる）
   const normalized =

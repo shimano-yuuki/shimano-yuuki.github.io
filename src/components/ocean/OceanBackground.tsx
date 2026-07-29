@@ -68,6 +68,7 @@ export function OceanBackground() {
           const depth = depthStore.advance(dt);
           const { dark, light } = waterColorsAt(depth);
           simulation.setDepth(depth, dark, light);
+          simulation.setVeil(depthStore.getVeil());
           simulation.addFlow(depthStore.getVelocity());
           depthStore.setVelocity(depthStore.getVelocity() * 0.9);
         };

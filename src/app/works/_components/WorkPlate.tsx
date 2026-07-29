@@ -45,7 +45,7 @@ export function WorkPlate({
         >
           <span className="label text-fg-faint">{index ?? "—"}</span>
 
-          <p className="display max-w-full break-words text-[clamp(1.75rem,5.5vw,3.75rem)] text-fg/25 transition-all duration-700 ease-[var(--ease-out-expo)] group-hover:translate-x-1 group-hover:text-fg/45">
+          <p className="display max-w-full break-words text-[clamp(1.75rem,5.5vw,3.75rem)] text-fg/45 transition-all duration-700 ease-[var(--ease-out-expo)] group-hover:translate-x-1 group-hover:text-fg/65">
             {title}
           </p>
 

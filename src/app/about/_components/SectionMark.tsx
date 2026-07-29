@@ -16,7 +16,7 @@ export function SectionMark({ index, title, titleJa }: SectionMarkProps) {
     <div className="flex items-baseline gap-4 border-t border-line pt-5">
       <span className="label text-fg-faint">{index}</span>
       <h2 className="label text-fg">{title}</h2>
-      <span className="ml-auto text-[0.6875rem] text-fg-faint">{titleJa}</span>
+      <span className="ml-auto text-xs text-fg-muted">{titleJa}</span>
     </div>
   );
 }

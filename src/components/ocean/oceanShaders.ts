@@ -27,6 +27,8 @@ export const lightFragment = /* glsl */ `
   uniform float uDepth;
   uniform float uAspect;
   uniform vec3 uTint;
+  /** 本文の背後を落としている量。読む場所では光も落とす。 */
+  uniform float uVeil;
 
   varying vec2 vUv;
 
@@ -94,6 +96,9 @@ export const lightFragment = /* glsl */ `
       float band = smoothstep(0.28, 0.95, vUv.y);
       light += web * causticFade * band * 0.09;
     }
+
+    // ベールは加算合成の光までは消せない。ここで直接落とす。
+    light *= 1.0 - uVeil * 0.82;
 
     gl_FragColor = vec4(uTint * light, 1.0);
   }

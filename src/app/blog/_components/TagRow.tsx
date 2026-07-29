@@ -8,7 +8,7 @@ type TagRowProps = {
 /**
  * 記事のタグ。囲みも背景も持たせず、小さな欧文ラベルの並びとして置くだけにする。
  */
-export function TagRow({ tags, className = "", tone = "faint" }: TagRowProps) {
+export function TagRow({ tags, className = "", tone = "muted" }: TagRowProps) {
   if (tags.length === 0) return null;
 
   return (

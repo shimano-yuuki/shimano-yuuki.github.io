@@ -11,14 +11,18 @@
   --color-surface: #0a0a0a;
   --color-surface-raised: #141414;
 
-  /* 文字 */
+  /*
+    文字。
+    海の上に重なるので、黒地のときより明るく取る。
+    本文相当（muted）は黒地で 7:1、ラベル（faint）は 4.5:1 を満たす値にしてある。
+  */
   --color-fg: #ffffff;
-  --color-fg-muted: #8a8a8a;
-  --color-fg-faint: #5a5a5a;
+  --color-fg-muted: #b0b0b0;
+  --color-fg-faint: #a0a0a0;
 
-  /* 罫 */
-  --color-line: #1f1f1f;
-  --color-line-bright: #333333;
+  /* 罫。水の上でも見えるよう、黒地のときより明るくする。 */
+  --color-line: #2b2b2b;
+  --color-line-bright: #454545;
 
   /* 書体 */
   --font-display: var(--font-display-src), "Helvetica Neue", sans-serif;
