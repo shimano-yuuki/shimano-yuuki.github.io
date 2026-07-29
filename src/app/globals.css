@@ -44,8 +44,8 @@
     -webkit-text-size-adjust: 100%;
   }
 
+  /* 背景色は html だけが持つ。body に置くと固定した海のキャンバスを覆ってしまう。 */
   body {
-    background-color: var(--color-void);
     color: var(--color-fg);
     font-family: var(--font-jp);
     font-weight: 400;

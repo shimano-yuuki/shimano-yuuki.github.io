@@ -91,6 +91,10 @@ export class FluidSimulation {
   private pointer = { x: 0.5, y: 0.5, dx: 0, dy: 0, active: false };
   private idleSince = 0;
   private text: string;
+  /** 0 が水面、1 が最深部。深いほど流れが遅く暗くなる。 */
+  private depth = 0;
+  /** スクロールの勢い。水流として注ぎ込む。 */
+  private flow = 0;
 
   constructor({ canvas, text, quality = "high" }: FluidOptions) {
     this.text = text;
@@ -201,6 +205,9 @@ export class FluidSimulation {
         uRefraction: { value: 0.055 },
         uTime: { value: 0 },
         uReveal: { value: 0 },
+        uWaterDark: { value: new THREE.Color(0.02, 0.16, 0.2) },
+        uWaterLight: { value: new THREE.Color(0.78, 0.98, 1.0) },
+        uDepth: { value: 0 },
       }),
     };
   }
@@ -346,17 +353,29 @@ export class FluidSimulation {
       { speed: -0.09, rx: 0.42, ry: 0.36, phase: 1.1, force: 230 },
     ];
 
+    // 深いところほど水は動かない。浅瀬の 1.0 から深海の 0.35 まで落とす。
+    const calm = 1 - this.depth * 0.65;
+
     for (const { speed, rx, ry, phase, force } of stirrers) {
-      const angle = time * speed + phase;
+      const angle = time * speed * calm + phase;
       const x = 0.5 + Math.cos(angle) * rx + Math.cos(angle * 2.3) * 0.06;
       const y = 0.5 + Math.sin(angle * 1.37) * ry + Math.sin(angle * 3.1) * 0.05;
       this.splat(
         x,
         y,
-        -Math.sin(angle) * force,
-        Math.cos(angle * 1.37) * force,
-        0.09,
+        -Math.sin(angle) * force * calm,
+        Math.cos(angle * 1.37) * force * calm,
+        0.09 * calm,
       );
+    }
+
+    // スクロールの勢いを、画面を縦に貫く水流として足す
+    if (Math.abs(this.flow) > 0.001) {
+      const strength = Math.max(Math.min(this.flow, 0.6), -0.6) * 1400;
+      for (const x of [0.18, 0.5, 0.82]) {
+        this.splat(x, 0.5, 0, -strength, 0.05);
+      }
+      this.flow *= 0.86;
     }
   }
 
@@ -399,6 +418,23 @@ export class FluidSimulation {
       this.pointer.active = true;
       this.idleSince = this.elapsed;
     }
+  }
+
+  /**
+   * 深度を反映する。水の色と、光の減衰量が変わる。
+   * 深いほど流れも遅くなるので、攪拌の強さもここで落とす。
+   */
+  setDepth(depth: number, dark: [number, number, number], light: [number, number, number]) {
+    this.depth = depth;
+    const display = this.materials.display.uniforms;
+    display.uDepth.value = depth;
+    (display.uWaterDark.value as THREE.Color).setRGB(dark[0], dark[1], dark[2]);
+    (display.uWaterLight.value as THREE.Color).setRGB(light[0], light[1], light[2]);
+  }
+
+  /** スクロールの勢いを水流として注ぎ込む。 */
+  addFlow(velocity: number) {
+    this.flow = velocity;
   }
 
   /** 1フレームだけ描く。reduced-motion のときはこれだけ呼ぶ。 */

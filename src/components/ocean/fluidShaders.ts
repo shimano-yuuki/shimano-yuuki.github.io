@@ -247,6 +247,12 @@ export const displayFragment = /* glsl */ `
   uniform float uTime;
   uniform float uReveal;
 
+  // 深度で移り変わる水の色。暗部と明部を受け取り、輝度で混ぜる。
+  uniform vec3 uWaterDark;
+  uniform vec3 uWaterLight;
+  // 0 が水面、1 が最深部。
+  uniform float uDepth;
+
   varying vec2 vUv;
 
   /** 高さマップから法線を作る。z が小さいほど起伏が強く出る。 */
@@ -265,14 +271,17 @@ export const displayFragment = /* glsl */ `
 
     float textMask = texture2D(uText, vUv).r;
 
+    // 文字は水面に浮かぶものなので、潜るほど消える
+    float textFade = uReveal * smoothstep(0.22, 0.02, uDepth);
+
     // 文字の輪郭。傾きが急なところ＝縁だけが立つ。
     float textEdge = length(textNormal.xy);
 
     // 文字は「流体の中に沈んだ起伏」として扱うので、法線を混ぜてから正規化する
-    vec3 normal = normalize(fluidNormal + textNormal * uTextDepth * uReveal);
+    vec3 normal = normalize(fluidNormal + textNormal * uTextDepth * textFade);
 
     // 法線の向きに背景をずらして拾う＝屈折。文字の縁ほど強くずらす。
-    vec2 refracted = vUv + normal.xy * uRefraction * (1.0 + textEdge * 2.5 * uReveal);
+    vec2 refracted = vUv + normal.xy * uRefraction * (1.0 + textEdge * 2.5 * textFade);
     float base = texture2D(uDye, refracted).r;
 
     vec3 lightDirection = normalize(vec3(0.45, 0.65, 0.62));
@@ -285,22 +294,31 @@ export const displayFragment = /* glsl */ `
     float rim = pow(1.0 - abs(normal.z), 2.2);
 
     // 文字の縁に沿った鏡面。ガラスを流体に沈めたときの光り方に寄せる。
-    float textSheen = pow(textEdge, 1.4) * (0.55 + diffuse * 0.7) * uReveal;
+    float textSheen = pow(textEdge, 1.4) * (0.55 + diffuse * 0.7) * textFade;
 
-    float value =
+    // 水そのものの明暗。ここまでは色を持たない。
+    float body =
         base * 0.62
       + diffuse * 0.30
-      + specular * 0.55
       + rim * 0.10
-      + textSheen * 0.42
       // 文字の内側はわずかに沈める。周りとの差で面が見えるようにする。
-      - textMask * 0.07 * uReveal;
+      - textMask * 0.07 * textFade;
 
-    // わずかなディザ。黒の階調にバンディングが出るのを防ぐ。
+    // 深いほど光が届かない。水の明暗そのものを圧縮する。
+    body *= mix(1.0, 0.42, uDepth);
+
+    // 深度の色で着色する
+    vec3 color = mix(uWaterDark, uWaterLight, clamp(body, 0.0, 1.0));
+
+    // 鏡面と文字の艶は白のまま乗せる。水の色に埋もれさせない。
+    float highlight = (specular * 0.55 + textSheen * 0.42) * mix(1.0, 0.3, uDepth);
+    color += vec3(highlight) * mix(vec3(1.0), uWaterLight, 0.35);
+
+    // わずかなディザ。暗部の階調にバンディングが出るのを防ぐ。
     float dither =
       fract(sin(dot(vUv * 1024.0 + uTime, vec2(12.9898, 78.233))) * 43758.5453);
-    value += (dither - 0.5) * 0.012;
+    color += (dither - 0.5) * 0.008;
 
-    gl_FragColor = vec4(vec3(clamp(value, 0.0, 1.0)), 1.0);
+    gl_FragColor = vec4(max(color, 0.0), 1.0);
   }
 `;

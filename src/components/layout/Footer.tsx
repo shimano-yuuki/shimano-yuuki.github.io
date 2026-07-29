@@ -3,7 +3,8 @@ import { navigation, site } from "@/lib/site";
 
 export function Footer() {
   return (
-    <footer className="mt-32 border-t border-line">
+    // 海の上に乗るので、自前で層と地色を持つ
+    <footer className="relative z-10 mt-32 border-t border-line bg-black/55 backdrop-blur-[2px]">
       <div className="measure py-16">
         <div className="grid gap-12 md:grid-cols-[1.4fr_1fr_1fr]">
           <div>
