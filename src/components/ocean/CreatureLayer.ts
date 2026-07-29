@@ -44,13 +44,19 @@ const SPECIES: Species[] = [
     swim: { mode: "pulse", amp: 0.055, freq: 1.0, speed: 1.7 } },
   { id: "manta", from: 0.38, to: 0.64, scale: 0.19, crossSeconds: 62, count: 1, bob: 0.02,
     swim: { mode: "flap", amp: 0.11, freq: 2.0, speed: 1.9 } },
-  { id: "whale", from: 0.56, to: 0.84, scale: 0.42, crossSeconds: 110, count: 1, bob: 0.015,
+  // クジラはトップ下部（d=0.55 付近）からでも見えるよう帯を広げ、2 頭にした
+  { id: "whale", from: 0.44, to: 0.88, scale: 0.42, crossSeconds: 100, count: 2, bob: 0.015,
     swim: { mode: "lateral", amp: 0.028, freq: 3.0, speed: 1.5 } },
   { id: "squid", from: 0.62, to: 0.9, scale: 0.2, crossSeconds: 88, count: 1, bob: 0.03,
     swim: { mode: "pulse", amp: 0.03, freq: 1.0, speed: 1.0 } },
-  { id: "anglerfish", from: 0.82, to: 1.0, scale: 0.13, crossSeconds: 150, count: 2, bob: 0.02,
+  // アンコウは深海の主役なので、大きく・提灯の光を体に映して見つけやすくする
+  { id: "anglerfish", from: 0.8, to: 1.0, scale: 0.18, crossSeconds: 110, count: 2, bob: 0.02,
     swim: { mode: "lateral", amp: 0.014, freq: 3.0, speed: 1.3 } },
 ];
+
+/** 生物発光が自分の体に映る色。 */
+const ANGLER_LIT = new THREE.Color(0.5, 0.42, 0.28);
+const JELLY_LIT = new THREE.Color(0.2, 0.38, 0.5);
 
 /** アトラス1枠の一辺（px）。 */
 const CELL = 256;
@@ -96,16 +102,20 @@ export class CreatureLayer {
 
     this.build(quality);
 
-    const fishUv = this.uvFor("fish");
+    // 群れは 3D メッシュなので専用のシーンとカメラを持つ（BoidsFlock 参照）
     this.flock = new BoidsFlock({
       count: quality === "high" ? 48 : 24,
-      atlas: this.atlas,
-      uvOffset: fishUv.offset,
-      uvScale: fishUv.scale,
       from: 0.08,
       to: 0.44,
     });
-    this.scene.add(this.flock.mesh);
+  }
+
+  /** シルエット層 → 3D の群れ、の順で描く。 */
+  render(renderer: THREE.WebGLRenderer) {
+    renderer.render(this.scene, this.camera);
+    // 群れは深度バッファを使うので、前のパスの深度を捨ててから描く
+    renderer.clearDepth();
+    renderer.render(this.flock.scene, this.flock.camera);
   }
 
   /** 全種類を1枚のキャンバスに並べて焼く。 */
@@ -298,6 +308,17 @@ export class CreatureLayer {
       const material = mesh.material as THREE.ShaderMaterial;
       material.uniforms.uTime.value = time;
       (material.uniforms.uTint.value as THREE.Color).copy(tint);
+
+      // 発光する種は、自分の光が体に映る。真っ黒な深海で影ごと消えないための照明
+      if (species.id === "anglerfish") {
+        (material.uniforms.uTint.value as THREE.Color).lerp(
+          ANGLER_LIT, 0.55,
+        );
+      } else if (species.id === "jellyfish") {
+        (material.uniforms.uTint.value as THREE.Color).lerp(
+          JELLY_LIT, 0.3,
+        );
+      }
       // 深いほど水に溶けて輪郭が薄くなる。
       // ベールの下では逆に少し濃くしないと、暗い水に埋もれてしまう。
       material.uniforms.uOpacity.value =
@@ -361,6 +382,7 @@ export class CreatureLayer {
         flow,
         pointer,
         this.aspect,
+        waterLight,
       );
     }
   }

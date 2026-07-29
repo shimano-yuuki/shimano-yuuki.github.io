@@ -3,20 +3,17 @@ import * as THREE from "three";
 /**
  * 小魚の群れ。古典 Boids（分離・整列・結合）で泳がせる。
  *
- * 以前は「群れを1枚のテクスチャに焼いた絵」だったが、それでは群れが
- * 曲がらない・割れない・逃げない。ここでは1匹ずつを個体として持ち、
- * 3つの規則と少しの外力だけで群れの振る舞いを出す。
+ * 魚は板ポリの絵ではなく、コードで生成した 3D メッシュ。
+ * 紡錘形の胴・二又の尾びれ・背びれを持ち、向きを変えるときは
+ * 縦軸で回頭するので、正面・背面の見付きが本当に変わる。
+ * 旋回時は体を傾け（バンク）、体側のうねりは法線を揺らして
+ * 光のさざめきとして見える。外部モデルは使わない。
  *
- * 描画は InstancedMesh の1ドローコール。位置・向き・大きさは
- * インスタンス行列に、うねりの位相だけを個体属性で渡す。
+ * 描画は InstancedMesh の1ドローコール。
  */
 
 type BoidsOptions = {
   count: number;
-  atlas: THREE.Texture;
-  /** アトラス内の小魚セルの UV。 */
-  uvOffset: THREE.Vector2;
-  uvScale: THREE.Vector2;
   /** 出現する深度帯。 */
   from: number;
   to: number;
@@ -27,7 +24,99 @@ const CRUISE = 0.11;
 const MIN_SPEED = 0.055;
 const MAX_SPEED = 0.34;
 
+/** 魚の体長（ワールド単位。画面の高さが 2）。個体差はこの倍率に掛かる。 */
+const BODY_LENGTH = 0.085;
+
+/**
+ * 魚のメッシュをコードで組む。
+ * x+ が鼻先、x- が尾。長さ 1、原点は体の中心。
+ */
+function buildFishGeometry(): THREE.BufferGeometry {
+  const positions: number[] = [];
+  const indices: number[] = [];
+
+  const RINGS = 22;
+  const SEGMENTS = 10;
+
+  // 紡錘形の胴。前 1/3 が最も太く、尾柄に向かって絞る。
+  // 実際の魚と同じく左右（z）を上下（y）より薄くする。
+  for (let ring = 0; ring <= RINGS; ring += 1) {
+    const t = ring / RINGS; // 0 = 鼻先, 1 = 尾柄
+    const x = 0.55 - t * 1.0;
+    const bulge = Math.sin(Math.min(Math.max(t, 0.001), 0.999) * Math.PI);
+    const ry = 0.13 * Math.pow(bulge, 0.72) * (1 - t * 0.18);
+    const rz = ry * 0.5;
+
+    for (let seg = 0; seg < SEGMENTS; seg += 1) {
+      const a = (seg / SEGMENTS) * Math.PI * 2;
+      positions.push(x, Math.cos(a) * ry, Math.sin(a) * rz);
+    }
+  }
+
+  for (let ring = 0; ring < RINGS; ring += 1) {
+    for (let seg = 0; seg < SEGMENTS; seg += 1) {
+      const a = ring * SEGMENTS + seg;
+      const b = ring * SEGMENTS + ((seg + 1) % SEGMENTS);
+      const c = (ring + 1) * SEGMENTS + seg;
+      const d = (ring + 1) * SEGMENTS + ((seg + 1) % SEGMENTS);
+      indices.push(a, c, b, b, c, d);
+    }
+  }
+
+  const body = new THREE.BufferGeometry();
+  body.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+  body.setIndex(indices);
+  body.computeVertexNormals();
+
+  // ひれは薄い板。二又の尾と、小さな背びれ。
+  const finPositions = [
+    // 尾びれ上葉
+    -0.44, 0.0, 0, -0.62, 0.16, 0, -0.53, 0.015, 0,
+    // 尾びれ下葉
+    -0.44, 0.0, 0, -0.53, -0.015, 0, -0.62, -0.16, 0,
+    // 背びれ
+    0.16, 0.1, 0, 0.02, 0.2, 0, -0.04, 0.09, 0,
+  ];
+  const fins = new THREE.BufferGeometry();
+  fins.setAttribute(
+    "position",
+    new THREE.Float32BufferAttribute(finPositions, 3),
+  );
+  fins.computeVertexNormals();
+
+  // 手で結合する（three の例のユーティリティに依存しない）
+  const bodyNonIndexed = body.toNonIndexed();
+  const merged = new THREE.BufferGeometry();
+  const bodyPos = bodyNonIndexed.getAttribute("position");
+  const bodyNorm = bodyNonIndexed.getAttribute("normal");
+  const finPos = fins.getAttribute("position");
+  const finNorm = fins.getAttribute("normal");
+
+  const mergedPositions = new Float32Array(
+    (bodyPos.count + finPos.count) * 3,
+  );
+  const mergedNormals = new Float32Array((bodyPos.count + finPos.count) * 3);
+  mergedPositions.set(bodyPos.array as Float32Array, 0);
+  mergedPositions.set(finPos.array as Float32Array, bodyPos.count * 3);
+  mergedNormals.set(bodyNorm.array as Float32Array, 0);
+  mergedNormals.set(finNorm.array as Float32Array, bodyPos.count * 3);
+
+  merged.setAttribute(
+    "position",
+    new THREE.BufferAttribute(mergedPositions, 3),
+  );
+  merged.setAttribute("normal", new THREE.BufferAttribute(mergedNormals, 3));
+
+  body.dispose();
+  bodyNonIndexed.dispose();
+  fins.dispose();
+  return merged;
+}
+
 export class BoidsFlock {
+  /** 魚は 3D なので専用のシーンとカメラで描く（横幅をアスペクトに合わせる）。 */
+  readonly scene = new THREE.Scene();
+  readonly camera = new THREE.OrthographicCamera(-1, 1, 1, -1, -10, 10);
   readonly mesh: THREE.InstancedMesh;
   readonly from: number;
   readonly to: number;
@@ -37,11 +126,15 @@ export class BoidsFlock {
   private velocities: Float32Array;
   /** 個体差。大きさの倍率。大きい個体はわずかに遅い。 */
   private sizes: Float32Array;
+  /** 回頭の状態。0 = 右向き、π = 左向き。目標へ滑らかに追従する。 */
+  private yaws: Float32Array;
+  private prevHeadings: Float32Array;
   private count: number;
   private dummy = new THREE.Object3D();
   private lastTime = 0;
+  private lastAspect = 0;
 
-  constructor({ count, atlas, uvOffset, uvScale, from, to }: BoidsOptions) {
+  constructor({ count, from, to }: BoidsOptions) {
     this.count = count;
     this.from = from;
     this.to = to;
@@ -49,20 +142,23 @@ export class BoidsFlock {
     this.positions = new Float32Array(count * 2);
     this.velocities = new Float32Array(count * 2);
     this.sizes = new Float32Array(count);
+    this.yaws = new Float32Array(count);
+    this.prevHeadings = new Float32Array(count);
 
     // 群れらしく、ひとかたまりの周辺にばらまいて始める
     const cx = Math.random() * 1.2 - 0.6;
     const cy = Math.random() > 0.5 ? 0.5 : -0.5;
-    const heading = Math.random() * Math.PI * 2;
+    const heading = Math.random() > 0.5 ? 0 : Math.PI;
     for (let i = 0; i < count; i += 1) {
       this.positions[i * 2] = cx + (Math.random() - 0.5) * 0.5;
       this.positions[i * 2 + 1] = cy + (Math.random() - 0.5) * 0.3;
       this.velocities[i * 2] = Math.cos(heading) * CRUISE;
-      this.velocities[i * 2 + 1] = Math.sin(heading) * CRUISE * 0.4;
+      this.velocities[i * 2 + 1] = (Math.random() - 0.5) * CRUISE * 0.4;
       this.sizes[i] = 0.75 + Math.random() * 0.5;
+      this.yaws[i] = heading > 1 ? Math.PI : 0;
     }
 
-    const geometry = new THREE.PlaneGeometry(1, 1);
+    const geometry = buildFishGeometry();
     const phases = new Float32Array(count);
     for (let i = 0; i < count; i += 1) phases[i] = Math.random() * Math.PI * 2;
     geometry.setAttribute(
@@ -71,24 +167,24 @@ export class BoidsFlock {
     );
 
     this.material = new THREE.ShaderMaterial({
-      vertexShader: boidVertex,
-      fragmentShader: boidFragment,
+      vertexShader: fishVertex,
+      fragmentShader: fishFragment,
       uniforms: {
-        uAtlas: { value: atlas },
-        uUvOffset: { value: uvOffset },
-        uUvScale: { value: uvScale },
-        uOpacity: { value: 0 },
-        uTint: { value: new THREE.Color(0, 0, 0) },
         uTime: { value: 0 },
+        uOpacity: { value: 0 },
+        uLift: { value: new THREE.Color(0, 0, 0) },
+        uWaterLight: { value: new THREE.Color(0.3, 0.6, 0.7) },
       },
       transparent: true,
-      depthTest: false,
-      depthWrite: false,
+      side: THREE.DoubleSide,
+      depthTest: true,
+      depthWrite: true,
     });
 
     this.mesh = new THREE.InstancedMesh(geometry, this.material, count);
     this.mesh.frustumCulled = false;
     this.mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    this.scene.add(this.mesh);
   }
 
   /**
@@ -99,15 +195,25 @@ export class BoidsFlock {
   update(
     time: number,
     presence: number,
-    tint: THREE.Color,
+    lift: THREE.Color,
     opacity: number,
     flow: number,
     pointer: { x: number; y: number } | null,
     aspect: number,
+    waterLight: THREE.Color,
   ) {
     this.material.uniforms.uTime.value = time;
-    (this.material.uniforms.uTint.value as THREE.Color).copy(tint);
+    (this.material.uniforms.uLift.value as THREE.Color).copy(lift);
+    (this.material.uniforms.uWaterLight.value as THREE.Color).copy(waterLight);
     this.material.uniforms.uOpacity.value = opacity;
+
+    // 3D の見付きを歪めないよう、カメラの横幅をアスペクトに合わせる
+    if (aspect !== this.lastAspect) {
+      this.lastAspect = aspect;
+      this.camera.left = -aspect;
+      this.camera.right = aspect;
+      this.camera.updateProjectionMatrix();
+    }
 
     if (presence <= 0.001) {
       this.mesh.visible = false;
@@ -230,24 +336,38 @@ export class BoidsFlock {
       else if (p[ix] < -1.3) p[ix] = 1.3;
     }
 
-    // インスタンス行列に反映
+    // --- 姿勢を決めてインスタンス行列へ ---
     for (let i = 0; i < this.count; i += 1) {
       const ix = i * 2;
-      const vx = v[ix];
-      const vy = v[ix + 1];
-      const mirrored = vx < 0;
+      // ワールド座標（x はアスペクトぶん広い）での速度から向きを決める
+      const vxw = v[ix] * aspect;
+      const vyw = v[ix + 1];
 
-      // 進行方向へ頭を向ける。左向きは鏡像にしてから角度を合わせる
-      const angle = mirrored ? Math.atan2(-vy, -vx) : Math.atan2(vy, vx);
+      // 回頭。右向きなら 0、左向きなら π。縦軸でゆっくり回るので、
+      // 向きを変える瞬間は正面（背面）の見付きになる
+      const targetYaw = vxw >= 0 ? 0 : Math.PI;
+      this.yaws[i] += (targetYaw - this.yaws[i]) * Math.min(dt * 4.5, 1);
+      const yaw = this.yaws[i];
 
-      const width = 0.042 * this.sizes[i];
-      this.dummy.position.set(p[ix], p[ix + 1], 0);
-      this.dummy.rotation.set(0, 0, angle * 0.7);
-      this.dummy.scale.set(
-        (mirrored ? -1 : 1) * width * 2,
-        width * aspect * 2,
-        1,
-      );
+      // 進行方向への傾き。回頭後の座標系で小さな角度になる式を使う
+      const pitch =
+        targetYaw === 0
+          ? Math.atan2(vyw, Math.max(vxw, 0.0001))
+          : Math.atan2(-vyw, Math.max(-vxw, 0.0001));
+
+      // 旋回の速さに応じて体を傾ける（バンク）
+      const heading = Math.atan2(vyw, vxw);
+      let turn = heading - this.prevHeadings[i];
+      if (turn > Math.PI) turn -= Math.PI * 2;
+      if (turn < -Math.PI) turn += Math.PI * 2;
+      this.prevHeadings[i] = heading;
+      const bank = Math.max(Math.min(-turn / Math.max(dt, 0.001) * 0.22, 0.7), -0.7);
+
+      const s = BODY_LENGTH * this.sizes[i];
+      this.dummy.position.set(p[ix] * aspect, p[ix + 1], 0);
+      this.dummy.rotation.order = "ZYX";
+      this.dummy.rotation.set(bank, yaw, pitch);
+      this.dummy.scale.setScalar(s);
       this.dummy.updateMatrix();
       this.mesh.setMatrixAt(i, this.dummy.matrix);
     }
@@ -260,45 +380,70 @@ export class BoidsFlock {
   }
 }
 
-const boidVertex = /* glsl */ `
+const fishVertex = /* glsl */ `
   attribute float aPhase;
 
-  varying vec2 vUv;
-  varying float vPhase;
+  uniform float uTime;
+
+  varying vec3 vNormal;
+  varying float vLocalY;
 
   void main() {
-    vUv = uv;
-    vPhase = aPhase;
+    vec3 pos = position;
+    vec3 nrm = normal;
+
+    // 体のうねり。実際の魚と同じく左右（ローカル z）へ振る。
+    // 真横からは輪郭がほとんど変わらず、法線が揺れて体側の光が
+    // さざめく——それが本物の見え方になる。
+    float t = uTime * 7.5 + aPhase;
+    float tail = pow(max(0.55 - pos.x, 0.0), 1.5);
+    float wave = sin(pos.x * 7.0 - t);
+    pos.z += wave * 0.16 * tail;
+
+    // うねりの傾きぶんだけ法線を横に振る（厳密でなくてよい）
+    float slope = cos(pos.x * 7.0 - t) * 0.16 * tail * 7.0;
+    nrm = normalize(vec3(nrm.x - slope * nrm.z * 0.6, nrm.y, nrm.z));
+
+    vLocalY = position.y;
+    vNormal = normalize(mat3(instanceMatrix) * nrm);
+
     gl_Position =
-      projectionMatrix * modelViewMatrix * instanceMatrix * vec4(position, 1.0);
+      projectionMatrix * modelViewMatrix * instanceMatrix * vec4(pos, 1.0);
   }
 `;
 
-const boidFragment = /* glsl */ `
+const fishFragment = /* glsl */ `
   precision highp float;
 
-  uniform sampler2D uAtlas;
-  uniform vec2 uUvOffset;
-  uniform vec2 uUvScale;
   uniform float uOpacity;
-  uniform vec3 uTint;
-  uniform float uTime;
+  uniform vec3 uLift;
+  uniform vec3 uWaterLight;
 
-  varying vec2 vUv;
-  varying float vPhase;
+  varying vec3 vNormal;
+  varying float vLocalY;
 
   void main() {
-    vec2 local = vUv;
+    vec3 normal = normalize(vNormal);
+    // 両面描画なので、裏面は法線を返す
+    if (!gl_FrontFacing) normal = -normal;
 
-    // 体のうねり。頭（アトラスの x が大きい側）はほぼ動かず、尾ほど振れる
-    float tail = pow(1.0 - local.x, 1.4);
-    local.y += sin(local.x * 7.0 - uTime * 7.5 - vPhase) * 0.09 * tail;
+    vec3 lightDirection = normalize(vec3(0.35, 0.75, 0.55));
+    float diffuse = max(dot(normal, lightDirection), 0.0);
+    // 輪郭が水の明るさを拾う。逆光の海で生き物が見える理由
+    float rim = pow(1.0 - abs(normal.z), 2.4);
 
-    if (local.y < 0.0 || local.y > 1.0) discard;
+    // 背は濃く腹は淡い（カウンターシェーディング）
+    vec3 base = mix(
+      vec3(0.012, 0.02, 0.032),
+      vec3(0.05, 0.075, 0.095),
+      smoothstep(0.06, -0.08, vLocalY)
+    );
 
-    vec2 uv = uUvOffset + local * uUvScale;
-    float mask = texture2D(uAtlas, uv).a;
-    if (mask < 0.01) discard;
-    gl_FragColor = vec4(uTint, mask * uOpacity);
+    vec3 color =
+        base
+      + uWaterLight * (diffuse * 0.22 + rim * 0.5)
+      + uLift * 0.55;
+
+    gl_FragColor = vec4(color, uOpacity);
   }
 `;

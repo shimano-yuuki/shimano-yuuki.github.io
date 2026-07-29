@@ -3,8 +3,8 @@
  */
 export const site = {
   name: "SHIMANO",
-  fullName: "Tomoaki Shimano",
-  nameJa: "島野 智明",
+  fullName: "Shimano Yuuki",
+  nameJa: "島野 友暉",
   role: "Software Engineer",
   tagline: "アプリと Web をつくっています。",
   description:

@@ -27,18 +27,24 @@ export function DepthController() {
     const update = () => {
       depthStore.setTarget(depthFrom(band, readProgress()));
 
-      // ヒーローのあるページでも、少し送った時点で本文が画面に入ってくる。
-      // 立ち上がりが遅いと本文が明るい水の上に乗ってしまうので、
-      // 0.4 画面ぶんで濃度を出しきる。
-      depthStore.setVeil(
-        heroed ? clamp01(window.scrollY / (window.innerHeight * 0.4)) : 1,
-      );
+      // ヒーローのあるページは 0.6 画面ぶんかけて滑らかに暗くする。
+      // 線形だと出だしで急に暗くなり「境界」に見えてしまうので、
+      // smoothstep で入りと抜きを丸める。
+      if (heroed) {
+        const linear = clamp01(window.scrollY / (window.innerHeight * 0.6));
+        depthStore.setVeil(linear * linear * (3 - 2 * linear));
+      } else {
+        depthStore.setVeil(1);
+      }
     };
 
     // 初回だけは補間せず、そのページの深度から始める
     if (firstRoute.current) {
       firstRoute.current = false;
       depthStore.snap(depthFrom(band, readProgress()));
+      // ベールも初期化する。これを忘れると、直接開いたページが
+      // 最初のスクロールまで明るいままで、スクロールした瞬間に急に暗転する
+      update();
     } else {
       update();
     }

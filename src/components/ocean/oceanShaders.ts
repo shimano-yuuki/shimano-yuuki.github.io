@@ -105,14 +105,13 @@ export const lightFragment = /* glsl */ `
 `;
 
 /**
- * 粒子。気泡（浅いところで上へ昇る）とマリンスノー（深いところで下へ降る）を
- * 1つのシェーダーで扱う。頂点側で位置と大きさを決める。
+ * マリンスノー。深いところで絶えず降り続ける微粒子。
+ * （気泡は「水槽っぽく見える」ため廃止した）
  */
 export const particleVertex = /* glsl */ `
   precision highp float;
 
   attribute vec3 aSeed;      // x, y の初期位置と、個体差の種
-  attribute float aKind;     // 0 = 気泡, 1 = マリンスノー
 
   uniform float uTime;
   uniform float uDepth;
@@ -120,29 +119,23 @@ export const particleVertex = /* glsl */ `
   uniform float uPixelRatio;
 
   varying float vAlpha;
-  varying float vKind;
 
   void main() {
-    vKind = aKind;
-
-    float speed = mix(0.075, 0.018, aKind);
-    float dir = mix(1.0, -1.0, aKind);
     float seed = aSeed.z;
 
-    // 上下に無限にループさせる
-    float y = fract(aSeed.y + uTime * speed * dir * (0.6 + seed * 0.8));
+    // ゆっくり降り続け、下端まで行ったら上からループする
+    float y = fract(aSeed.y - uTime * 0.018 * (0.6 + seed * 0.8));
     // 横はゆっくり蛇行させる
     float x = fract(aSeed.x + sin(uTime * 0.12 * (0.4 + seed) + seed * 9.0) * 0.02);
 
-    // 気泡は浅いところだけ、マリンスノーは深いところだけ
-    float bubbleFade = smoothstep(0.24, 0.02, uDepth);
+    // 深いところでだけ現れる
     float snowFade = smoothstep(0.3, 0.55, uDepth);
-    vAlpha = mix(bubbleFade, snowFade, aKind) * (0.35 + seed * 0.65);
+    vAlpha = snowFade * (0.35 + seed * 0.65);
 
     // 画面の縁で消えるようにして、唐突な出現を隠す
     vAlpha *= smoothstep(0.0, 0.08, y) * smoothstep(1.0, 0.92, y);
 
-    gl_PointSize = mix(2.5, 1.7, aKind) * (0.5 + seed) * uPixelRatio;
+    gl_PointSize = 1.7 * (0.5 + seed) * uPixelRatio;
     gl_Position = vec4(x * 2.0 - 1.0, y * 2.0 - 1.0, 0.0, 1.0);
   }
 `;
@@ -150,11 +143,9 @@ export const particleVertex = /* glsl */ `
 export const particleFragment = /* glsl */ `
   precision highp float;
 
-  uniform vec3 uBubbleTint;
   uniform vec3 uSnowTint;
 
   varying float vAlpha;
-  varying float vKind;
 
   void main() {
     // 点を丸く抜く
@@ -163,11 +154,6 @@ export const particleFragment = /* glsl */ `
     if (d > 0.5) discard;
 
     float soft = smoothstep(0.5, 0.1, d);
-    vec3 tint = mix(uBubbleTint, uSnowTint, vKind);
-
-    // 気泡は輪郭が明るいリング、マリンスノーは中心が明るい粒
-    float shape = mix(smoothstep(0.24, 0.46, d) * 1.4 + soft * 0.3, soft, vKind);
-
-    gl_FragColor = vec4(tint * shape, shape * vAlpha);
+    gl_FragColor = vec4(uSnowTint * soft, soft * vAlpha);
   }
 `;

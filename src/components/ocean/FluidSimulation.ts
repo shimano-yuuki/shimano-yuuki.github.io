@@ -186,20 +186,17 @@ export class FluidSimulation {
       new THREE.Mesh(new THREE.PlaneGeometry(2, 2), this.lightMaterial),
     );
 
-    const count = quality === "high" ? 900 : 340;
+    // 粒子はマリンスノーのみ。気泡は「水槽っぽく見える」ため廃止した
+    const count = quality === "high" ? 520 : 220;
     const seeds = new Float32Array(count * 3);
-    const kinds = new Float32Array(count);
     for (let i = 0; i < count; i += 1) {
       seeds[i * 3] = Math.random();
       seeds[i * 3 + 1] = Math.random();
       seeds[i * 3 + 2] = Math.random();
-      // 半分を気泡、半分をマリンスノーにする
-      kinds[i] = i % 2 === 0 ? 0 : 1;
     }
 
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute("aSeed", new THREE.BufferAttribute(seeds, 3));
-    geometry.setAttribute("aKind", new THREE.BufferAttribute(kinds, 1));
     // 位置は頂点シェーダーが決めるが、three が境界計算に使うので入れておく
     geometry.setAttribute("position", new THREE.BufferAttribute(seeds, 3));
     geometry.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 10);
@@ -212,7 +209,6 @@ export class FluidSimulation {
         uDepth: { value: 0 },
         uAspect: { value: 1 },
         uPixelRatio: { value: 1 },
-        uBubbleTint: { value: new THREE.Color(0.75, 0.95, 1.0) },
         uSnowTint: { value: new THREE.Color(0.82, 0.88, 0.95) },
       },
       transparent: true,
@@ -417,8 +413,9 @@ export class FluidSimulation {
     m.advection.uniforms.uTexelSize.value = dyeTexel;
     m.advection.uniforms.uVelocity.value = this.velocity.read.texture;
     m.advection.uniforms.uSource.value = this.dye.read.texture;
-    // 濃度はほとんど減衰させない。減らすと攪拌が通った筋以外が黒に沈む。
-    m.advection.uniforms.uDissipation.value = 0.06;
+    // 注入と釣り合う程度に減衰させる。低すぎると濃度が飽和して模様が潰れ、
+    // 「渦の形が崩れてどこかへ行く」ように見える。
+    m.advection.uniforms.uDissipation.value = 0.3;
     this.blit(m.advection, this.dye.write);
     this.dye.swap();
     m.advection.uniforms.uTexelSize.value = simTexel;
@@ -431,12 +428,15 @@ export class FluidSimulation {
   private autoStir(time: number) {
     // 海の水はゆっくり動く。速いと洗濯機のように見えてしまうので、
     // 回る速さも注ぐ力も抑えめにしてある。
+    // 速さはすべて基本角速度（周期 90 秒）の整数倍。軌道が閉じて同じ周回を
+    // 繰り返すので、渦が形を崩してどこかへ行ってしまわない。
+    const base = (Math.PI * 2) / 90;
     const stirrers = [
-      { speed: 0.085, rx: 0.34, ry: 0.27, phase: 0, force: 190 },
-      { speed: -0.062, rx: 0.28, ry: 0.33, phase: 2.1, force: 165 },
-      { speed: 0.115, rx: 0.4, ry: 0.18, phase: 4.3, force: 140 },
+      { speed: base, rx: 0.34, ry: 0.27, phase: 0, force: 190 },
+      { speed: -base, rx: 0.28, ry: 0.33, phase: 2.1, force: 165 },
+      { speed: base * 2, rx: 0.4, ry: 0.18, phase: 4.3, force: 140 },
       // 画面の下半分が淀まないように、低い位置を大きく回る点を足す
-      { speed: -0.045, rx: 0.42, ry: 0.36, phase: 1.1, force: 155 },
+      { speed: -base, rx: 0.42, ry: 0.36, phase: 1.1, force: 155 },
     ];
 
     // 深いところほど水は動かない。浅瀬の 1.0 から深海の 0.35 まで落とす。
@@ -444,14 +444,15 @@ export class FluidSimulation {
 
     for (const { speed, rx, ry, phase, force } of stirrers) {
       const angle = time * speed * calm + phase;
-      const x = 0.5 + Math.cos(angle) * rx + Math.cos(angle * 2.3) * 0.06;
-      const y = 0.5 + Math.sin(angle * 1.37) * ry + Math.sin(angle * 3.1) * 0.05;
+      // 内側の倍率も整数（2, 3）にして、軌道が正確に閉じるようにする
+      const x = 0.5 + Math.cos(angle) * rx + Math.cos(angle * 2) * 0.06;
+      const y = 0.5 + Math.sin(angle) * ry + Math.sin(angle * 3) * 0.05;
       this.splat(
         x,
         y,
         -Math.sin(angle) * force * calm,
         Math.cos(angle * 1.37) * force * calm,
-        0.09 * calm,
+        0.13 * calm,
       );
     }
 
@@ -584,7 +585,7 @@ export class FluidSimulation {
         ? { x: this.pointer.x * 2 - 1, y: this.pointer.y * 2 - 1 }
         : null,
     );
-    this.renderer.render(this.creatures.scene, this.creatures.camera);
+    this.creatures.render(this.renderer);
     this.renderer.render(this.overlayScene, this.camera);
     this.renderer.autoClear = true;
   }
