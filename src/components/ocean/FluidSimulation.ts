@@ -11,6 +11,7 @@ import {
   splatFragment,
   vorticityFragment,
 } from "./fluidShaders";
+import { CreatureLayer } from "./CreatureLayer";
 import {
   lightFragment,
   overlayVertex,
@@ -88,6 +89,8 @@ export class FluidSimulation {
   private overlayScene = new THREE.Scene();
   private lightMaterial!: THREE.ShaderMaterial;
   private particleMaterial!: THREE.ShaderMaterial;
+  /** 深度帯ごとに泳ぐ生き物。 */
+  private creatures!: CreatureLayer;
 
   private settings: (typeof SETTINGS)[Quality];
   private width = 0;
@@ -153,6 +156,7 @@ export class FluidSimulation {
     this.scene.add(this.mesh);
 
     this.buildOverlays(quality);
+    this.creatures = new CreatureLayer(quality);
   }
 
   /**
@@ -561,6 +565,16 @@ export class FluidSimulation {
     particles.uPixelRatio.value = this.renderer.getPixelRatio();
 
     this.renderer.autoClear = false;
+    // 生き物は水の中にいるので、光や粒子より先に描いて奥に置く
+    this.creatures.setAspect(aspect);
+    this.creatures.update(
+      this.depth,
+      this.elapsed,
+      this.flow,
+      this.veil,
+      this.materials.display.uniforms.uWaterLight.value as THREE.Color,
+    );
+    this.renderer.render(this.creatures.scene, this.creatures.camera);
     this.renderer.render(this.overlayScene, this.camera);
     this.renderer.autoClear = true;
   }
@@ -644,6 +658,7 @@ export class FluidSimulation {
     });
     this.lightMaterial.dispose();
     this.particleMaterial.dispose();
+    this.creatures.dispose();
 
     this.renderer.dispose();
   }
