@@ -1,4 +1,9 @@
 import * as THREE from "three";
+import {
+  BIG_GEOMETRY_BUILDERS,
+  buildBigCreatureMaterial,
+  type BigSpeciesId,
+} from "./BigCreatures";
 import { BoidsFlock } from "./BoidsFlock";
 import { CREATURE_PAINTERS, GLOW_POINTS, type CreatureId } from "./creatures";
 
@@ -34,23 +39,41 @@ type Species = {
 
 const SWIM_MODE = { lateral: 0, flap: 1, pulse: 2 } as const;
 
-// 群れ（旧 school）は BoidsFlock が受け持つので、ここには単独遊泳だけを置く。
-// 小魚の単独遊泳は廃止した——3D の群れの隣に 2D の平板な小魚がいると嘘が見えるため
+// 2D のシルエットで残すのは、漆黒の帯に住む2種だけ。
+// あの暗さでは輪郭しか見えないので、シルエット + 提灯の光が正しい表現になる。
+// 明るい層のサメ・クジラ・マンタ・クラゲは 3D（BIG_SPECIES）へ移した
 const SPECIES: Species[] = [
-  { id: "shark", from: 0.18, to: 0.44, scale: 0.16, crossSeconds: 40, count: 1, bob: 0.012,
-    swim: { mode: "lateral", amp: 0.05, freq: 4.2, speed: 3.4 } },
-  { id: "jellyfish", from: 0.34, to: 0.66, scale: 0.11, crossSeconds: 120, count: 3, bob: 0.06,
-    swim: { mode: "pulse", amp: 0.055, freq: 1.0, speed: 1.7 } },
-  { id: "manta", from: 0.38, to: 0.64, scale: 0.19, crossSeconds: 62, count: 1, bob: 0.02,
-    swim: { mode: "flap", amp: 0.11, freq: 2.0, speed: 1.9 } },
-  // クジラはトップ下部（d=0.55 付近）からでも見えるよう帯を広げ、2 頭にした
-  { id: "whale", from: 0.44, to: 0.88, scale: 0.42, crossSeconds: 100, count: 2, bob: 0.015,
-    swim: { mode: "lateral", amp: 0.028, freq: 3.0, speed: 1.5 } },
   { id: "squid", from: 0.62, to: 0.9, scale: 0.2, crossSeconds: 88, count: 1, bob: 0.03,
     swim: { mode: "pulse", amp: 0.03, freq: 1.0, speed: 1.0 } },
-  // アンコウは深海の主役なので、大きく・提灯の光を体に映して見つけやすくする
   { id: "anglerfish", from: 0.8, to: 1.0, scale: 0.18, crossSeconds: 110, count: 2, bob: 0.02,
     swim: { mode: "lateral", amp: 0.014, freq: 3.0, speed: 1.3 } },
+];
+
+/** 3D の大物。scale はワールド単位の体長（画面の高さが 2）。 */
+type BigSpecies = {
+  id: BigSpeciesId;
+  from: number;
+  to: number;
+  scale: number;
+  crossSeconds: number;
+  count: number;
+  bob: number;
+  swim: { amp: number; freq: number; speed: number };
+  /** 翼を見せるための一定の傾き（マンタ用）。 */
+  roll?: number;
+  /** 直立して漂う（クラゲ用）。回頭しない。 */
+  upright?: boolean;
+};
+
+const BIG_SPECIES: BigSpecies[] = [
+  { id: "shark", from: 0.16, to: 0.44, scale: 0.36, crossSeconds: 52, count: 1,
+    bob: 0.012, swim: { amp: 0.05, freq: 4.5, speed: 2.6 } },
+  { id: "whale", from: 0.44, to: 0.88, scale: 0.85, crossSeconds: 110, count: 2,
+    bob: 0.01, swim: { amp: 0.06, freq: 3.0, speed: 1.5 } },
+  { id: "manta", from: 0.36, to: 0.64, scale: 0.5, crossSeconds: 72, count: 1,
+    bob: 0.018, swim: { amp: 0.14, freq: 0, speed: 1.7 }, roll: 0.5 },
+  { id: "jellyfish", from: 0.34, to: 0.66, scale: 0.34, crossSeconds: 170, count: 3,
+    bob: 0.05, swim: { amp: 0.07, freq: 0, speed: 1.5 }, upright: true },
 ];
 
 /** 生物発光が自分の体に映る色。 */
@@ -60,6 +83,17 @@ const JELLY_LIT = new THREE.Color(0.2, 0.38, 0.5);
 /** アトラス1枠の一辺（px）。 */
 const CELL = 256;
 const COLUMNS = 4;
+
+type BigIndividual = {
+  species: BigSpecies;
+  mesh: THREE.Mesh;
+  material: THREE.ShaderMaterial;
+  offset: number;
+  y: number;
+  direction: 1 | -1;
+  phase: number;
+  parallax: number;
+};
 
 type Individual = {
   species: Species;
@@ -90,6 +124,10 @@ export class CreatureLayer {
   private aspect = 1;
   /** 小魚の群れ。Boids で泳ぐ。 */
   private flock: BoidsFlock;
+  /** 3D の大物。群れと同じシーンで描く。 */
+  private bigs: BigIndividual[] = [];
+  /** 深度パララックス用。前フレームの深度。 */
+  private prevDepth = -1;
 
   constructor(quality: "high" | "low") {
     this.atlas = new THREE.CanvasTexture(this.paintAtlas());
@@ -107,6 +145,32 @@ export class CreatureLayer {
       from: 0.02,
       to: 0.44,
     });
+
+    // 大物も同じ 3D シーンに住まわせる
+    for (const species of BIG_SPECIES) {
+      const geometry = BIG_GEOMETRY_BUILDERS[species.id]();
+      const count = quality === "high" ? species.count : Math.max(1, species.count - 1);
+      for (let i = 0; i < count; i += 1) {
+        const material = buildBigCreatureMaterial(species.id, species.swim);
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.frustumCulled = false;
+        // 群れ（z=0）より奥に置く。大物は常に群れの向こうを行く
+        mesh.position.z = -1.5;
+
+        const towardEdge = i % 2 === 0 ? -1 : 1;
+        this.bigs.push({
+          species,
+          mesh,
+          material,
+          offset: Math.random(),
+          y: 0.5 + towardEdge * (0.2 + Math.random() * 0.22),
+          direction: Math.random() > 0.5 ? 1 : -1,
+          phase: Math.random() * Math.PI * 2,
+          parallax: 0.75 + Math.random() * 0.5,
+        });
+        this.flock.scene.add(mesh);
+      }
+    }
   }
 
   /** シルエット層 → 3D の群れ、の順で描く。 */
@@ -269,11 +333,14 @@ export class CreatureLayer {
   update(
     depth: number,
     time: number,
-    flow: number,
     veil: number,
     waterLight: THREE.Color,
     pointer: { x: number; y: number } | null,
   ) {
+    // 深度の変化量。潜れば生き物とすれ違う（上へ流れる）根拠になる
+    if (this.prevDepth < 0) this.prevDepth = depth;
+    const depthDelta = depth - this.prevDepth;
+    this.prevDepth = depth;
     /*
       浅い水では逆光の黒いシルエットが正しい。
       しかし本文の背後では水を落としているので、黒いままだと黒に溶けて消える。
@@ -336,11 +403,12 @@ export class CreatureLayer {
         (individual.offset + speed * (1 / 60) * individual.direction + 1) % 1;
 
       const x = individual.offset * 2.4 - 1.2;
-      const bob =
-        Math.sin(time * 0.35 + individual.phase) * species.bob +
-        // スクロールの勢いで押し流される
-        flow * 0.35;
-      const y = (individual.y + bob) * 2 - 1;
+      // 潜るほど、その種の帯の中心を過ぎた分だけ上へ流れていく。
+      // スクロール速度を直接足すと上下に跳ねて見えるので、
+      // なめらかに補間される深度そのものに結びつける
+      const drift = (depth - center) * -0.6 * individual.parallax;
+      const bob = Math.sin(time * 0.35 + individual.phase) * species.bob;
+      const y = (individual.y + bob + drift) * 2 - 1;
 
       const width = species.scale * individual.parallax;
       const height = width * this.aspect;
@@ -366,6 +434,52 @@ export class CreatureLayer {
       }
     }
 
+    // 3D の大物
+    for (const big of this.bigs) {
+      const { species, mesh, material } = big;
+      const center = (species.from + species.to) / 2;
+      const half = (species.to - species.from) / 2;
+      const distance = Math.abs(depth - center) / Math.max(half, 0.001);
+      const t = Math.min(Math.max((distance - 0.62) / 0.38, 0), 1);
+      const presence = 1 - t * t * (3 - 2 * t);
+
+      material.uniforms.uTime.value = time;
+      (material.uniforms.uLift.value as THREE.Color).copy(tint);
+      (material.uniforms.uWaterLight.value as THREE.Color).copy(waterLight);
+      material.uniforms.uOpacity.value =
+        presence * (0.92 - depth * 0.3) * (1 + veil * 0.45);
+
+      if (presence <= 0.001) {
+        mesh.visible = false;
+        continue;
+      }
+      mesh.visible = true;
+
+      const speed = big.parallax / species.crossSeconds;
+      big.offset = (big.offset + speed * (1 / 60) * big.direction + 1) % 1;
+
+      const x = big.offset * 2.4 - 1.2;
+      const drift = (depth - center) * -0.6 * big.parallax;
+      const bob = Math.sin(time * 0.35 + big.phase) * species.bob;
+      const yTop = big.y + bob + drift;
+      const yNdc = -(yTop * 2 - 1);
+
+      const scale = species.scale * big.parallax;
+      mesh.position.set(x * this.aspect, yNdc, -1.5);
+      mesh.scale.setScalar(scale);
+
+      if (species.upright) {
+        // クラゲは回頭せず、ゆっくり傾いで漂う
+        mesh.rotation.set(0, 0, Math.sin(time * 0.25 + big.phase) * 0.14);
+      } else {
+        const yaw = big.direction > 0 ? 0 : Math.PI;
+        // マンタは翼が見える角度まで一定に傾ける
+        const roll = (species.roll ?? 0) * -big.direction;
+        mesh.rotation.order = "ZYX";
+        mesh.rotation.set(roll, yaw, 0);
+      }
+    }
+
     // 群れ。単独遊泳と同じ濃度規則で出入りする
     {
       const center = (this.flock.from + this.flock.to) / 2;
@@ -378,7 +492,7 @@ export class CreatureLayer {
         presence,
         tint,
         presence * (0.9 - depth * 0.35) * (1 + veil * 0.55),
-        flow,
+        depthDelta,
         pointer,
         this.aspect,
         waterLight,

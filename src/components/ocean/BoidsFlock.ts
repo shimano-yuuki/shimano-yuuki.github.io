@@ -278,7 +278,8 @@ export class BoidsFlock {
     presence: number,
     lift: THREE.Color,
     opacity: number,
-    flow: number,
+    /** このフレームの深度変化。潜っている間、群れは静かに上へ流れる。 */
+    depthDelta: number,
     pointer: { x: number; y: number } | null,
     aspect: number,
     waterLight: THREE.Color,
@@ -382,8 +383,9 @@ export class BoidsFlock {
         }
       }
 
-      // スクロールの勢いで押し流される（単独遊泳の個体と同じ向き）
-      fy -= flow * 0.5;
+      // 潜っている間はすれ違うように上へ流れる。スクロール速度を
+      // 直接足すと跳ねて見えるので、なめらかな深度の変化に結びつける
+      fy += (depthDelta / Math.max(dt, 0.001)) * 0.5;
 
       // 上下の壁は柔らかく押し返す
       if (y > 0.88) fy -= (y - 0.88) * 3;

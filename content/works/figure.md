@@ -2,7 +2,7 @@
 title: figure
 subtitle: 制作中
 summary: フロントエンド中心で進めている制作物。内容は追って書きます。
-date: 2026-06-01
+date: 2025-02-11
 role:
   - フロントエンド
 stack:

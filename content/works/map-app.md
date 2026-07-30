@@ -2,7 +2,7 @@
 title: map_app
 subtitle: 位置情報アプリのプロトタイプ
 summary: Mapbox を使った地図アプリのプロトタイプ。ログインから地図・履歴までの導線をひと通り確認できるところまで作った。
-date: 2026-02-01
+date: 2026-04-15
 role:
   - 設計
   - 実装
@@ -12,8 +12,8 @@ stack:
   - Mapbox
 cover: ""
 gallery: []
-links:
-  github: ""
+# リポジトリは非公開のためリンクは載せない
+links: {}
 featured: true
 order: 2
 ---

@@ -2,7 +2,7 @@
 title: mtik
 subtitle: チケット管理アプリ
 summary: ライブやイベントのチケットを「次に何をすればいいか」と「参加後に何を残したか」まで追える、個人用のチケット管理アプリ。
-date: 2026-05-01
+date: 2026-04-01
 role:
   - 企画
   - 設計
@@ -14,9 +14,8 @@ stack:
   - REST API
 cover: ""
 gallery: []
-links:
-  github: ""
-  site: ""
+# リポジトリは非公開のためリンクは載せない
+links: {}
 featured: true
 order: 1
 ---

@@ -12,12 +12,12 @@ d = ページの基準深度 + スクロール進捗 × ページの深度幅
 
 | ルート | 深度帯 | 主な住人 |
 |---|---|---|
-| `/` | 0.00–0.55 | 群れ（3D の小魚）、サメ |
-| `/works` | 0.30–0.55 | 群れ（3D の小魚）、サメ |
-| `/works/[slug]` | 0.45–0.65 | クラゲ、マンタ |
-| `/blog` | 0.55–0.75 | クジラ（帯は 0.44–0.88 なのでトップ下部から見える） |
-| `/blog/[slug]` | 0.65–0.85 | 大王イカ |
-| `/about` | 0.85–1.00 | チョウチンアンコウ |
+| `/` | 0.00–0.55 | 群れ・サメ（3D） |
+| `/works` | 0.30–0.55 | 群れ・サメ（3D） |
+| `/works/[slug]` | 0.45–0.65 | クラゲ・マンタ（3D） |
+| `/blog` | 0.55–0.75 | クジラ（3D。帯は 0.44–0.88） |
+| `/blog/[slug]` | 0.65–0.85 | 大王イカ（シルエット） |
+| `/about` | 0.85–1.00 | チョウチンアンコウ（シルエット + 提灯） |
 
 - 帯の定義: `src/lib/depth.ts` の `BANDS`
 - 水の色: 同ファイルの `WATER_RAMP`
@@ -28,8 +28,9 @@ d = ページの基準深度 + スクロール進捗 × ページの深度幅
 
 1. **水** — `FluidSimulation.ts`。Stable Fluids（移流→渦度強調→発散→圧力→勾配減算）
 2. **色** — 流体の輝度を深度の色ランプに通す（`fluidShaders.ts` の displayFragment）
-3. **生き物** — `CreatureLayer.ts`（単独遊泳のシルエット）+ `BoidsFlock.ts`
-   （コード生成の 3D 魚の群れ。専用シーン・カメラで描く）
+3. **生き物** — `BoidsFlock.ts`（3D の群れ）+ `BigCreatures.ts`（3D の大物:
+   サメ・クジラ・マンタ・クラゲ）+ `CreatureLayer.ts`（統括。漆黒の帯に住む
+   大王イカとアンコウだけは 2D シルエット + 発光で残している）
 4. **光条・カースティクス** — `oceanShaders.ts` の lightFragment。浅い層のみ
 5. **マリンスノー** — 同 particleVertex/Fragment（気泡は水槽っぽいので廃止）
 6. **生物発光** — CreatureLayer 内の加算グロー（アンコウの提灯・クラゲ）
@@ -44,7 +45,7 @@ d = ページの基準深度 + スクロール進捗 × ページの深度幅
 | 水の色 | `src/lib/depth.ts` の `WATER_RAMP` |
 | 文字（SHIMANO）の消える深度 | `fluidShaders.ts` displayFragment の `textFade` |
 | 光条・カースティクスの強さ | `oceanShaders.ts` lightFragment 末尾の係数（0.2 / 0.09） |
-| 生き物の種類・数・大きさ・速さ | `CreatureLayer.ts` の `SPECIES` |
+| 生き物の種類・数・大きさ・速さ | `CreatureLayer.ts` の `SPECIES`（2D）と `BIG_SPECIES`（3D 大物） |
 | 泳ぎ方（うねりの振幅・波数・拍） | 同 `SPECIES` の `swim` |
 | 群れの匹数・逃避半径・規則の強さ | `BoidsFlock.ts`（count / 0.38 / 各係数） |
 | ベールの濃さ | `ContentVeil.tsx` の `PEAK`（現在 0.86） |

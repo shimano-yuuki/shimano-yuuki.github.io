@@ -109,8 +109,9 @@ export class FluidSimulation {
   private depth = 0;
   /** スクロールの勢い。水流として注ぎ込む。 */
   private flow = 0;
-  /** 本文の背後を落としている量（0〜1）。 */
+  /** 本文の背後を落としている量（0〜1）。目標へ毎フレーム寄せる。 */
   private veil = 0;
+  private veilTarget = 0;
   /** 最後に人が触った時刻（秒）。放置中は計算量を落とす。 */
   private lastInteraction = 0;
 
@@ -532,7 +533,7 @@ export class FluidSimulation {
    * 読む場面では光そのものをここで弱める。
    */
   setVeil(veil: number) {
-    this.veil = veil;
+    this.veilTarget = veil;
   }
 
   /** 1フレームだけ描く。reduced-motion のときはこれだけ呼ぶ。 */
@@ -548,6 +549,9 @@ export class FluidSimulation {
   }
 
   private draw() {
+    // ベールは急に切り替えず、描画側でも滑らかに追従させる
+    this.veil += (this.veilTarget - this.veil) * 0.1;
+
     const display = this.materials.display;
     display.uniforms.uDye.value = this.dye.read.texture;
     display.uniforms.uTime.value = this.elapsed;
@@ -577,7 +581,6 @@ export class FluidSimulation {
     this.creatures.update(
       this.depth,
       this.elapsed,
-      this.flow,
       this.veil,
       this.materials.display.uniforms.uWaterLight.value as THREE.Color,
       // ポインタは 0〜1（y は上向き）で持っているので NDC に直して渡す

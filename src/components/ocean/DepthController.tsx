@@ -30,8 +30,11 @@ export function DepthController() {
       // ヒーローのあるページは 0.6 画面ぶんかけて滑らかに暗くする。
       // 線形だと出だしで急に暗くなり「境界」に見えてしまうので、
       // smoothstep で入りと抜きを丸める。
+      // 高さの基準は clientHeight。innerHeight はスマホの URL バーの
+      // 伸縮で変わり、スクロール中に暗さの基準が揺れてしまう。
       if (heroed) {
-        const linear = clamp01(window.scrollY / (window.innerHeight * 0.6));
+        const viewport = document.documentElement.clientHeight || 1;
+        const linear = clamp01(window.scrollY / (viewport * 0.6));
         depthStore.setVeil(linear * linear * (3 - 2 * linear));
       } else {
         depthStore.setVeil(1);
@@ -55,7 +58,9 @@ export function DepthController() {
       const delta = window.scrollY - lastScrollY.current;
       lastScrollY.current = window.scrollY;
       // 速度は正規化しておく。1画面ぶん動いたら 1.0。
-      depthStore.setVelocity(delta / Math.max(window.innerHeight, 1));
+      depthStore.setVelocity(
+        delta / Math.max(document.documentElement.clientHeight, 1),
+      );
       update();
     };
 

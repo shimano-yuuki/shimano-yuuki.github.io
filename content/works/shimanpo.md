@@ -1,14 +1,15 @@
 ---
 title: shimanpo
-subtitle: 制作中
-summary: 個人開発として進めているプロジェクト。内容は追って書きます。
-date: 2026-04-01
+subtitle: 技術ブログ
+summary: 技術ブログとして立ち上げたリポジトリ。学んだことを記事の形で残していく。
+date: 2026-01-19
 role:
   - 個人開発
 stack: []
 cover: ""
 gallery: []
-links: {}
+links:
+  github: https://github.com/shimano-yuuki/shimanpo
 featured: false
 order: 4
 ---
