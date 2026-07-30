@@ -26,7 +26,7 @@ export function StatusLine() {
 
   return (
     <div className="label space-y-1 text-cyan/90">
-      <p aria-hidden="true">●</p>
+      <p aria-hidden="true" className="status-dot">●</p>
       <p>
         <time>{time}</time> JST
       </p>

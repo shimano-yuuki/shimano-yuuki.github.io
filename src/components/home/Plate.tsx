@@ -15,8 +15,32 @@ export function Plate() {
         preserveAspectRatio="xMidYMid slice"
         aria-hidden="true"
       >
-        <g fill="none" stroke="#8fd8e0" strokeOpacity="0.36" strokeWidth="1">
-          {[0, 1, 2, 3, 4, 5].map((i) => (
+        {/* 2群に分け、逆向きにゆっくり漂わせる。潮の満ち引きの速さ */}
+        <g
+          className="contour-a"
+          fill="none"
+          stroke="#8fd8e0"
+          strokeOpacity="0.36"
+          strokeWidth="1"
+        >
+          {[0, 2, 4].map((i) => (
+            <ellipse
+              key={i}
+              cx={720 + i * 26}
+              cy={360 + i * 14}
+              rx={560 - i * 88}
+              ry={300 - i * 46}
+            />
+          ))}
+        </g>
+        <g
+          className="contour-b"
+          fill="none"
+          stroke="#8fd8e0"
+          strokeOpacity="0.36"
+          strokeWidth="1"
+        >
+          {[1, 3, 5].map((i) => (
             <ellipse
               key={i}
               cx={720 + i * 26}

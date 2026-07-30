@@ -97,6 +97,29 @@
   line-height: 1.6;
 }
 
+/** ホバーで下線が左から伸びる。ナビと「すべて見る」用。 */
+@utility link-sweep {
+  position: relative;
+
+  &::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: -0.2em;
+    width: 100%;
+    height: 1px;
+    background-color: var(--color-cyan);
+    transform: scaleX(0);
+    transform-origin: right;
+    transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  &:hover::after {
+    transform: scaleX(1);
+    transform-origin: left;
+  }
+}
+
 /** ゆっくり現れる。FadeIn コンポーネントが .is-visible を付ける。 */
 @utility fade-in {
   opacity: 0;
@@ -109,6 +132,52 @@
     opacity: 1;
     translate: 0 0;
   }
+}
+
+/* ==========================================================================
+   数少ない動き。等深線の漂いと、ステータス点の明滅
+   ========================================================================== */
+
+/* 潮のようにゆっくり。1周 30 秒前後、行って戻る */
+@keyframes contour-drift-a {
+  from {
+    transform: translate(0, 0) scale(1);
+  }
+  to {
+    transform: translate(-2.2%, 1.4%) scale(1.05);
+  }
+}
+
+@keyframes contour-drift-b {
+  from {
+    transform: translate(0, 0) scale(1);
+  }
+  to {
+    transform: translate(1.8%, -1.2%) scale(0.96);
+  }
+}
+
+.contour-a {
+  animation: contour-drift-a 28s ease-in-out infinite alternate;
+  transform-origin: 60% 55%;
+}
+
+.contour-b {
+  animation: contour-drift-b 36s ease-in-out infinite alternate;
+  transform-origin: 58% 58%;
+}
+
+@keyframes status-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.25;
+  }
+}
+
+.status-dot {
+  animation: status-pulse 2.4s ease-in-out infinite;
 }
 
 /* ==========================================================================

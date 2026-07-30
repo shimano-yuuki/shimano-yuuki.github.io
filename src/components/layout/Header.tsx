@@ -13,13 +13,13 @@ export function Header() {
       </Link>
 
       <nav className="flex gap-5 text-sm sm:gap-7">
-        <Link href="/works" className="transition-colors hover:text-cyan">
+        <Link href="/works" className="link-sweep transition-colors hover:text-cyan">
           作品
         </Link>
-        <Link href="/blog" className="transition-colors hover:text-cyan">
+        <Link href="/blog" className="link-sweep transition-colors hover:text-cyan">
           記録
         </Link>
-        <Link href="/about" className="transition-colors hover:text-cyan">
+        <Link href="/about" className="link-sweep transition-colors hover:text-cyan">
           自己紹介
         </Link>
       </nav>

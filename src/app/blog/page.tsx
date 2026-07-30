@@ -30,10 +30,11 @@ export default function BlogPage() {
             <h2 className="mb-2 text-sm text-fg-faint">{year}</h2>
 
             <ul>
-              {yearPosts.map((post) => (
+              {yearPosts.map((post, index) => (
                 <FadeIn
                   as="li"
                   key={post.slug}
+                  delay={Math.min(index, 5) * 70}
                   className="border-t border-line"
                 >
                   <Link

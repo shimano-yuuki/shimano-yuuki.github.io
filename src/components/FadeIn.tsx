@@ -6,6 +6,8 @@ type FadeInProps = {
   children: React.ReactNode;
   className?: string;
   as?: "div" | "section" | "ul" | "li" | "header";
+  /** 現れるまでの時間差（ms）。行の連なりに波を作る。 */
+  delay?: number;
 };
 
 /**
@@ -13,7 +15,12 @@ type FadeInProps = {
  * 実体は IntersectionObserver が .is-visible を付けるだけで、
  * 見た目は globals.css の .fade-in が持つ。reduced-motion では即表示。
  */
-export function FadeIn({ children, className = "", as: Tag = "div" }: FadeInProps) {
+export function FadeIn({
+  children,
+  className = "",
+  as: Tag = "div",
+  delay = 0,
+}: FadeInProps) {
   const ref = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -34,8 +41,12 @@ export function FadeIn({ children, className = "", as: Tag = "div" }: FadeInProp
   }, []);
 
   return (
-    // @ts-expect-error 動的タグに ref を渡すため
-    <Tag ref={ref} className={`fade-in ${className}`}>
+    <Tag
+      // @ts-expect-error 動的タグに ref を渡すため
+      ref={ref}
+      className={`fade-in ${className}`}
+      style={delay ? { transitionDelay: `${delay}ms` } : undefined}
+    >
       {children}
     </Tag>
   );

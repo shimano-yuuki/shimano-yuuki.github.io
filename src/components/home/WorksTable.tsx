@@ -13,8 +13,13 @@ export function WorksTable({ works }: { works: Work[] }) {
       <h2 className="mb-2 text-sm text-fg-faint">作品 — 新しい順</h2>
 
       <ul>
-        {works.map((work) => (
-          <FadeIn as="li" key={work.slug} className="border-t border-line">
+        {works.map((work, index) => (
+          <FadeIn
+            as="li"
+            key={work.slug}
+            delay={Math.min(index, 5) * 70}
+            className="border-t border-line"
+          >
             <Link
               href={`/works/${work.slug}`}
               className="group grid gap-x-8 gap-y-1 py-6 sm:grid-cols-[7rem_minmax(0,1fr)] sm:py-7"
