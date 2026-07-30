@@ -25,7 +25,7 @@ const MIN_SPEED = 0.055;
 const MAX_SPEED = 0.34;
 
 /** 魚の体長（ワールド単位。画面の高さが 2）。個体差はこの倍率に掛かる。 */
-const BODY_LENGTH = 0.085;
+const BODY_LENGTH = 0.095;
 
 /**
  * 自作モデルの置き場所。Blender などで作った .glb をここに置き、
@@ -38,28 +38,37 @@ const MODEL_URL = "/models/fish.glb";
 const MANIFEST_URL = "/models/manifest.json";
 
 /**
- * 魚のメッシュをコードで組む。
+ * 魚のメッシュをコードで組む。イワシを念頭に置いた「様式化されたリアル」。
  * x+ が鼻先、x- が尾。長さ 1、原点は体の中心。
+ *
+ * 体は横に潰れた紡錘形で、背より腹が深い。尾びれは二又、
+ * 背びれ・尻びれ・胸びれ（左右）を持つ。ヒレは aFin=1 の薄板で、
+ * シェーダー側で半透明にする。
  */
 function buildFishGeometry(): THREE.BufferGeometry {
+  const RINGS = 28;
+  const SEGMENTS = 14;
+
   const positions: number[] = [];
   const indices: number[] = [];
 
-  const RINGS = 22;
-  const SEGMENTS = 10;
+  // 体高。最大は体の前 4 割あたり。尾柄で細く絞る
+  const height = (t: number) =>
+    Math.max(0.125 * Math.pow(Math.sin(Math.PI * Math.pow(t, 0.72)), 0.9), 0.016);
+  // 横幅は体高の半分弱。頭側をわずかに厚く
+  const width = (t: number) => height(t) * (0.52 - 0.14 * t);
+  // 断面の中心。腹側へ少し下げると「背は張り、腹は深い」魚の輪郭になる
+  const centerY = (t: number) => -0.014 * Math.sin(Math.PI * Math.pow(t, 0.85));
 
-  // 紡錘形の胴。前 1/3 が最も太く、尾柄に向かって絞る。
-  // 実際の魚と同じく左右（z）を上下（y）より薄くする。
   for (let ring = 0; ring <= RINGS; ring += 1) {
-    const t = ring / RINGS; // 0 = 鼻先, 1 = 尾柄
-    const x = 0.55 - t * 1.0;
-    const bulge = Math.sin(Math.min(Math.max(t, 0.001), 0.999) * Math.PI);
-    const ry = 0.13 * Math.pow(bulge, 0.72) * (1 - t * 0.18);
-    const rz = ry * 0.5;
-
+    const t = ring / RINGS;
+    const x = 0.5 - t * 0.92; // 鼻先 +0.5 → 尾柄 -0.42
+    const ry = height(t);
+    const rz = width(t);
+    const cy = centerY(t);
     for (let seg = 0; seg < SEGMENTS; seg += 1) {
       const a = (seg / SEGMENTS) * Math.PI * 2;
-      positions.push(x, Math.cos(a) * ry, Math.sin(a) * rz);
+      positions.push(x, cy + Math.cos(a) * ry, Math.sin(a) * rz);
     }
   }
 
@@ -73,49 +82,69 @@ function buildFishGeometry(): THREE.BufferGeometry {
     }
   }
 
+  // 鼻先と尾柄をふさぐ
+  const noseTip = positions.length / 3;
+  positions.push(0.515, centerY(0), 0);
+  for (let seg = 0; seg < SEGMENTS; seg += 1) {
+    indices.push(noseTip, seg, (seg + 1) % SEGMENTS);
+  }
+  const tailTip = positions.length / 3;
+  positions.push(-0.435, centerY(1), 0);
+  const lastRing = RINGS * SEGMENTS;
+  for (let seg = 0; seg < SEGMENTS; seg += 1) {
+    indices.push(tailTip, lastRing + ((seg + 1) % SEGMENTS), lastRing + seg);
+  }
+
   const body = new THREE.BufferGeometry();
   body.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
   body.setIndex(indices);
   body.computeVertexNormals();
 
-  // ひれは薄い板。二又の尾と、小さな背びれ。
-  const finPositions = [
-    // 尾びれ上葉
-    -0.44, 0.0, 0, -0.62, 0.16, 0, -0.53, 0.015, 0,
-    // 尾びれ下葉
-    -0.44, 0.0, 0, -0.53, -0.015, 0, -0.62, -0.16, 0,
-    // 背びれ
-    0.16, 0.1, 0, 0.02, 0.2, 0, -0.04, 0.09, 0,
+  // ---- ヒレ。すべて薄板の三角形。z=0 のものと、左右へ開く胸びれ ----
+  const finTriangles: number[] = [
+    // 尾びれ 上葉（後縁をえぐって鎌形に）
+    -0.41, 0.02, 0, -0.64, 0.17, 0, -0.52, 0.012, 0,
+    -0.64, 0.17, 0, -0.565, 0.05, 0, -0.52, 0.012, 0,
+    // 尾びれ 下葉
+    -0.41, -0.02, 0, -0.52, -0.012, 0, -0.64, -0.17, 0,
+    -0.64, -0.17, 0, -0.52, -0.012, 0, -0.565, -0.05, 0,
+    // 背びれ（後ろへ流れる形）
+    0.13, 0.105, 0, 0.03, 0.2, 0, -0.05, 0.09, 0,
+    0.03, 0.2, 0, -0.11, 0.15, 0, -0.05, 0.09, 0,
+    // 尻びれ
+    -0.14, -0.095, 0, -0.21, -0.16, 0, -0.27, -0.08, 0,
+    // 胸びれ（左右）。後ろ下へ開く
+    0.24, -0.03, 0.05, 0.1, -0.1, 0.11, 0.09, -0.04, 0.07,
+    0.24, -0.03, -0.05, 0.09, -0.04, -0.07, 0.1, -0.1, -0.11,
   ];
   const fins = new THREE.BufferGeometry();
   fins.setAttribute(
     "position",
-    new THREE.Float32BufferAttribute(finPositions, 3),
+    new THREE.Float32BufferAttribute(finTriangles, 3),
   );
   fins.computeVertexNormals();
 
-  // 手で結合する（three の例のユーティリティに依存しない）
+  // ---- 結合し、体/ヒレの区別を aFin 属性で持たせる ----
   const bodyNonIndexed = body.toNonIndexed();
-  const merged = new THREE.BufferGeometry();
   const bodyPos = bodyNonIndexed.getAttribute("position");
   const bodyNorm = bodyNonIndexed.getAttribute("normal");
   const finPos = fins.getAttribute("position");
   const finNorm = fins.getAttribute("normal");
 
-  const mergedPositions = new Float32Array(
-    (bodyPos.count + finPos.count) * 3,
-  );
-  const mergedNormals = new Float32Array((bodyPos.count + finPos.count) * 3);
+  const total = bodyPos.count + finPos.count;
+  const mergedPositions = new Float32Array(total * 3);
+  const mergedNormals = new Float32Array(total * 3);
+  const finFlags = new Float32Array(total);
   mergedPositions.set(bodyPos.array as Float32Array, 0);
   mergedPositions.set(finPos.array as Float32Array, bodyPos.count * 3);
   mergedNormals.set(bodyNorm.array as Float32Array, 0);
   mergedNormals.set(finNorm.array as Float32Array, bodyPos.count * 3);
+  finFlags.fill(1, bodyPos.count);
 
-  merged.setAttribute(
-    "position",
-    new THREE.BufferAttribute(mergedPositions, 3),
-  );
+  const merged = new THREE.BufferGeometry();
+  merged.setAttribute("position", new THREE.BufferAttribute(mergedPositions, 3));
   merged.setAttribute("normal", new THREE.BufferAttribute(mergedNormals, 3));
+  merged.setAttribute("aFin", new THREE.BufferAttribute(finFlags, 1));
 
   body.dispose();
   bodyNonIndexed.dispose();
@@ -304,7 +333,7 @@ export class BoidsFlock {
         const dy = p[jx + 1] - y;
         const d2 = dx * dx + dy * dy;
 
-        if (d2 < 0.0016) {
+        if (d2 < 0.0022) {
           // 分離: 近すぎる相手からは距離の二乗に反比例して離れる
           sepX -= dx / (d2 + 0.0001);
           sepY -= dy / (d2 + 0.0001);
@@ -498,11 +527,13 @@ function normalizeFishGeometry(geometry: THREE.BufferGeometry) {
 
 const fishVertex = /* glsl */ `
   attribute float aPhase;
+  attribute float aFin;
 
   uniform float uTime;
 
   varying vec3 vNormal;
-  varying float vLocalY;
+  varying vec3 vLocal;
+  varying float vFin;
 
   void main() {
     vec3 pos = position;
@@ -520,7 +551,8 @@ const fishVertex = /* glsl */ `
     float slope = cos(pos.x * 7.0 - t) * 0.16 * tail * 7.0;
     nrm = normalize(vec3(nrm.x - slope * nrm.z * 0.6, nrm.y, nrm.z));
 
-    vLocalY = position.y;
+    vLocal = position;
+    vFin = aFin;
     vNormal = normalize(mat3(instanceMatrix) * nrm);
 
     gl_Position =
@@ -536,30 +568,64 @@ const fishFragment = /* glsl */ `
   uniform vec3 uWaterLight;
 
   varying vec3 vNormal;
-  varying float vLocalY;
+  varying vec3 vLocal;
+  varying float vFin;
+
+  float hash(vec2 p) {
+    return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
+  }
 
   void main() {
     vec3 normal = normalize(vNormal);
-    // 両面描画なので、裏面は法線を返す
     if (!gl_FrontFacing) normal = -normal;
 
-    vec3 lightDirection = normalize(vec3(0.35, 0.75, 0.55));
+    vec3 lightDirection = normalize(vec3(0.35, 0.8, 0.5));
+    vec3 viewDirection = vec3(0.0, 0.0, 1.0);
     float diffuse = max(dot(normal, lightDirection), 0.0);
-    // 輪郭が水の明るさを拾う。逆光の海で生き物が見える理由
-    float rim = pow(1.0 - abs(normal.z), 2.4);
+    vec3 halfway = normalize(lightDirection + viewDirection);
+    float specular = pow(max(dot(normal, halfway), 0.0), 48.0);
+    float rim = pow(1.0 - abs(normal.z), 2.6);
 
-    // 背は濃く腹は淡い（カウンターシェーディング）
-    vec3 base = mix(
-      vec3(0.012, 0.02, 0.032),
-      vec3(0.05, 0.075, 0.095),
-      smoothstep(0.06, -0.08, vLocalY)
-    );
+    // ---- イワシの配色。背は青緑、体側は銀、腹は淡い ----
+    float band = vLocal.y;
+    vec3 back = vec3(0.02, 0.045, 0.052);
+    vec3 flank = vec3(0.34, 0.4, 0.42);
+    vec3 belly = vec3(0.4, 0.44, 0.45);
+    vec3 base = mix(flank, back, smoothstep(0.0, 0.085, band));
+    base = mix(base, belly, smoothstep(-0.025, -0.095, band));
 
-    vec3 color =
-        base
-      + uWaterLight * (diffuse * 0.22 + rim * 0.5)
-      + uLift * 0.55;
+    // 体側の銀帯。ここだけ鏡のように水明かりを強く返す
+    float silver = exp(-pow((band - 0.012) / 0.04, 2.0)) * (1.0 - vFin);
 
-    gl_FragColor = vec4(color, uOpacity);
+    // 鱗のきらめき。粗い格子のノイズで反射率を揺らす
+    float sparkle = hash(floor(vec2(vLocal.x * 90.0, vLocal.y * 60.0)));
+
+    vec3 color = base * (0.3 + diffuse * 0.7);
+    color += uWaterLight *
+      (specular * (0.4 + silver * (0.9 + sparkle * 0.7)) +
+       rim * 0.5 +
+       diffuse * silver * 0.35);
+    color += (sparkle - 0.5) * 0.035 * (1.0 - vFin);
+
+    // エラぶたの陰。頭と胴の境に薄い縦の影を落とす
+    float gill = smoothstep(0.014, 0.0, abs(vLocal.x - 0.3 + band * 0.3));
+    color *= 1.0 - gill * 0.22 * (1.0 - vFin);
+
+    // 目。黒目の縁が銀に光る
+    float eyeDistance = distance(vLocal.xy, vec2(0.4, 0.015));
+    float eyeRing = smoothstep(0.03, 0.021, eyeDistance);
+    float pupil = smoothstep(0.017, 0.009, eyeDistance);
+    color = mix(color, vec3(0.62, 0.68, 0.7), eyeRing * (1.0 - vFin));
+    color = mix(color, vec3(0.012, 0.016, 0.022), pupil * (1.0 - vFin));
+
+    // ヒレは薄く透け、水明かりをほんのり通す
+    color = mix(color, color * 0.9 + uWaterLight * 0.12, vFin);
+    float alpha = uOpacity * mix(1.0, 0.55, vFin);
+
+    // ベール下の持ち上げ。一様に足すと立体感が潰れるので、
+    // 光の当たる面と輪郭にだけ乗せて陰影を保つ
+    color += uLift * (0.18 + diffuse * 0.38 + rim * 0.7);
+
+    gl_FragColor = vec4(color, alpha);
   }
 `;

@@ -34,10 +34,9 @@ type Species = {
 
 const SWIM_MODE = { lateral: 0, flap: 1, pulse: 2 } as const;
 
-// 群れ（旧 school）は BoidsFlock が受け持つので、ここには単独遊泳だけを置く
+// 群れ（旧 school）は BoidsFlock が受け持つので、ここには単独遊泳だけを置く。
+// 小魚の単独遊泳は廃止した——3D の群れの隣に 2D の平板な小魚がいると嘘が見えるため
 const SPECIES: Species[] = [
-  { id: "fish", from: 0.0, to: 0.22, scale: 0.05, crossSeconds: 26, count: 5, bob: 0.03,
-    swim: { mode: "lateral", amp: 0.08, freq: 7.0, speed: 7.0 } },
   { id: "shark", from: 0.18, to: 0.44, scale: 0.16, crossSeconds: 40, count: 1, bob: 0.012,
     swim: { mode: "lateral", amp: 0.05, freq: 4.2, speed: 3.4 } },
   { id: "jellyfish", from: 0.34, to: 0.66, scale: 0.11, crossSeconds: 120, count: 3, bob: 0.06,
@@ -105,7 +104,7 @@ export class CreatureLayer {
     // 群れは 3D メッシュなので専用のシーンとカメラを持つ（BoidsFlock 参照）
     this.flock = new BoidsFlock({
       count: quality === "high" ? 48 : 24,
-      from: 0.08,
+      from: 0.02,
       to: 0.44,
     });
   }
