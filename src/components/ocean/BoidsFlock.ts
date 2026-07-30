@@ -28,6 +28,16 @@ const MAX_SPEED = 0.34;
 const BODY_LENGTH = 0.085;
 
 /**
+ * 自作モデルの置き場所。Blender などで作った .glb をここに置き、
+ * manifest.json の "fish.glb" を true にすると、コード生成の魚の代わりに使われる。
+ * （直接 HEAD で存在確認すると、無いときに 404 がコンソールへ赤く残るため、
+ *  常に存在するマニフェストを見る方式にしている）
+ * 作り方の約束事は docs/OCEAN.md の「自作 3D モデルの差し替え」を参照。
+ */
+const MODEL_URL = "/models/fish.glb";
+const MANIFEST_URL = "/models/manifest.json";
+
+/**
  * 魚のメッシュをコードで組む。
  * x+ が鼻先、x- が尾。長さ 1、原点は体の中心。
  */
@@ -133,6 +143,7 @@ export class BoidsFlock {
   private dummy = new THREE.Object3D();
   private lastTime = 0;
   private lastAspect = 0;
+  private disposed = false;
 
   constructor({ count, from, to }: BoidsOptions) {
     this.count = count;
@@ -185,6 +196,47 @@ export class BoidsFlock {
     this.mesh.frustumCulled = false;
     this.mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
     this.scene.add(this.mesh);
+
+    // 自作モデルがあれば読み込んで差し替える。無ければコード生成のまま
+    void this.tryLoadModel();
+  }
+
+  /**
+   * public/models/fish.glb があれば形状を差し替える。
+   * マテリアルは差し替えない——水中のライティング（カウンターシェーディング・
+   * リムライト・ベールの持ち上げ）はこちらのシェーダーが受け持つので、
+   * Blender 側はメッシュの形だけ作ればよい。
+   */
+  private async tryLoadModel() {
+    try {
+      // マニフェストで有効化されているときだけ読みにいく
+      const manifest = await fetch(MANIFEST_URL);
+      if (!manifest.ok) return;
+      const entries = (await manifest.json()) as Record<string, boolean>;
+      if (!entries["fish.glb"]) return;
+
+      const { GLTFLoader } = await import(
+        "three/examples/jsm/loaders/GLTFLoader.js"
+      );
+      const gltf = await new GLTFLoader().loadAsync(MODEL_URL);
+      if (this.disposed) return;
+
+      const geometry = mergeSceneGeometry(gltf.scene);
+      if (!geometry) return;
+      normalizeFishGeometry(geometry);
+
+      // うねりの位相は個体属性なので、新しい形状にも付け直す
+      geometry.setAttribute(
+        "aPhase",
+        this.mesh.geometry.getAttribute("aPhase"),
+      );
+
+      const previous = this.mesh.geometry;
+      this.mesh.geometry = geometry;
+      previous.dispose();
+    } catch {
+      // 読み込みに失敗したらコード生成の魚のまま泳ぎ続ける
+    }
   }
 
   /**
@@ -375,8 +427,72 @@ export class BoidsFlock {
   }
 
   dispose() {
+    this.disposed = true;
     this.mesh.geometry.dispose();
     this.material.dispose();
+  }
+}
+
+/**
+ * GLB 内の全メッシュを、配置ごと 1 つのジオメトリにまとめる。
+ * 位置と法線だけ拾う。UV やマテリアルは水中ライティングでは使わない。
+ */
+function mergeSceneGeometry(root: THREE.Object3D): THREE.BufferGeometry | null {
+  const chunks: { position: Float32Array; normal: Float32Array }[] = [];
+
+  root.updateMatrixWorld(true);
+  root.traverse((object) => {
+    const mesh = object as THREE.Mesh;
+    if (!mesh.isMesh) return;
+
+    let geometry = mesh.geometry.clone();
+    if (geometry.index) geometry = geometry.toNonIndexed();
+    geometry.applyMatrix4(mesh.matrixWorld);
+    if (!geometry.getAttribute("normal")) geometry.computeVertexNormals();
+
+    chunks.push({
+      position: geometry.getAttribute("position").array as Float32Array,
+      normal: geometry.getAttribute("normal").array as Float32Array,
+    });
+    geometry.dispose();
+  });
+
+  if (chunks.length === 0) return null;
+
+  const total = chunks.reduce((sum, c) => sum + c.position.length, 0);
+  const positions = new Float32Array(total);
+  const normals = new Float32Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    positions.set(chunk.position, offset);
+    normals.set(chunk.normal, offset);
+    offset += chunk.position.length;
+  }
+
+  const merged = new THREE.BufferGeometry();
+  merged.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+  merged.setAttribute("normal", new THREE.BufferAttribute(normals, 3));
+  return merged;
+}
+
+/**
+ * どんな大きさ・位置で作られていても泳げるように揃える。
+ * 中心を原点へ、体長（x の幅）を 1 に。向きだけは揃えられないので、
+ * 「頭を +X に向けて作る」ことを約束事にしている。
+ */
+function normalizeFishGeometry(geometry: THREE.BufferGeometry) {
+  geometry.computeBoundingBox();
+  const box = geometry.boundingBox;
+  if (!box) return;
+
+  const center = new THREE.Vector3();
+  box.getCenter(center);
+  geometry.translate(-center.x, -center.y, -center.z);
+
+  const length = box.max.x - box.min.x;
+  if (length > 0.0001) {
+    const scale = 1 / length;
+    geometry.scale(scale, scale, scale);
   }
 }
 
