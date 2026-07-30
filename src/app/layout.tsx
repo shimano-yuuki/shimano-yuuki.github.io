@@ -3,11 +3,6 @@ import { fontVariables } from "./fonts";
 import "./globals.css";
 import { Footer } from "@/components/layout/Footer";
 import { Header } from "@/components/layout/Header";
-import { SmoothScroll } from "@/components/motion/SmoothScroll";
-import { ContentVeil } from "@/components/ocean/ContentVeil";
-import { DepthController } from "@/components/ocean/DepthController";
-import { DepthGauge } from "@/components/ocean/DepthGauge";
-import { OceanBackground } from "@/components/ocean/OceanBackground";
 import { site } from "@/lib/site";
 
 export const metadata: Metadata = {
@@ -37,29 +32,18 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ja" className={`${fontVariables} h-full antialiased`}>
-      {/*
-        body には背景色を置かない。海のキャンバスがこの下に敷かれるため、
-        色を持たせると水が隠れてしまう。素の色は html 側が持っている。
-      */}
-      <body className="flex min-h-full flex-col text-fg">
-        {/* 海はレイアウトに置く。ページを移っても破棄されないので水が途切れない。 */}
-        <OceanBackground />
-        <ContentVeil />
-        <DepthController />
-        <DepthGauge />
-        <SmoothScroll>
-          <a
-            href="#main"
-            className="label sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-100 focus:bg-fg focus:px-4 focus:py-2 focus:text-void"
-          >
-            Skip to content
-          </a>
-          <Header />
-          <main id="main" className="relative z-10 flex-1">
-            {children}
-          </main>
-          <Footer />
-        </SmoothScroll>
+      <body className="flex min-h-full flex-col bg-bg text-fg">
+        <a
+          href="#main"
+          className="label sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:bg-fg focus:px-4 focus:py-2 focus:text-bg"
+        >
+          本文へ
+        </a>
+        <Header />
+        <main id="main" className="flex-1">
+          {children}
+        </main>
+        <Footer />
       </body>
     </html>
   );

@@ -10,8 +10,8 @@ type TableOfContentsProps = {
 
 /**
  * 本文の h2 / h3 から起こす目次。
- * 広い画面では本文の右に小さく添えて sticky に、狭い画面では本文の前に置く。
- * IntersectionObserver で現在位置の見出しだけを白く上げる。
+ * 狭い画面では本文の前に、広い画面では右の段に置く（位置は呼び出し側が決める）。
+ * IntersectionObserver で現在位置の見出しだけを白く上げる。飾りは持たない。
  */
 export function TableOfContents({
   headings,
@@ -62,32 +62,26 @@ export function TableOfContents({
   return (
     <nav aria-labelledby="toc-heading" className={className}>
       <h2 id="toc-heading" className="label text-fg-faint">
-        Contents
+        目次
       </h2>
 
-      <ol className="mt-5">
+      <ol className="mt-4">
         {headings.map((heading, index) => {
           const active = heading.id === activeId;
 
           return (
             <li
               key={`${heading.id}-${index}`}
-              className={`mt-3 ${heading.depth === 3 ? "pl-5" : ""}`}
+              className={`mt-2 ${heading.depth === 3 ? "pl-4" : ""}`}
             >
               <a
                 href={`#${heading.id}`}
                 aria-current={active ? "location" : undefined}
-                className={`group flex items-start gap-3 text-[0.8125rem] leading-relaxed break-words transition-colors duration-500 ${
+                className={`text-sm leading-relaxed break-words transition-colors ${
                   active ? "text-fg" : "text-fg-faint hover:text-fg-muted"
                 }`}
               >
-                <span
-                  aria-hidden="true"
-                  className={`mt-[0.7em] h-px w-4 flex-none origin-left bg-current transition-transform duration-500 ease-[var(--ease-out-expo)] ${
-                    active ? "scale-x-100" : "scale-x-[0.4]"
-                  }`}
-                />
-                <span className="min-w-0">{heading.text}</span>
+                {heading.text}
               </a>
             </li>
           );

@@ -1,37 +1,31 @@
 @import "tailwindcss";
 
 /* ==========================================================================
-   デザイントークン — モノクローム
-   黒地に白だけ。色を使わないぶん、明度と余白と動きで階層をつける。
+   デザイントークン — 黒地にクリーム白、色は「面」で一度だけ
+   飾りは足さない。速さと組版がこのサイトの装いになる。
    ========================================================================== */
 
 @theme {
-  /* 地 */
-  --color-void: #000000;
-  --color-surface: #0a0a0a;
-  --color-surface-raised: #141414;
+  /* 地。わずかに青みの黒 */
+  --color-bg: #0b0d10;
 
-  /*
-    文字。
-    海の上に重なるので、黒地のときより明るく取る。
-    本文相当（muted）は黒地で 7:1、ラベル（faint）は 4.5:1 を満たす値にしてある。
-  */
-  --color-fg: #ffffff;
-  --color-fg-muted: #b0b0b0;
-  --color-fg-faint: #a0a0a0;
+  /* 文字。クリーム白と、その減衰2段 */
+  --color-fg: #f2f1e8;
+  --color-fg-muted: #b9b7ac;
+  --color-fg-faint: #9d9b90;
 
-  /* 罫。水の上でも見えるよう、黒地のときより明るくする。 */
-  --color-line: #2b2b2b;
-  --color-line-bright: #454545;
+  /* 罫。作品表の行区切りにだけ使う */
+  --color-line: #22252b;
+
+  /* 海から持ってきた色。ヒーローの色面と、細部の差しにだけ使う */
+  --color-plate: #0e5a78;
+  --color-plate-deep: #071c2c;
+  --color-cyan: #8fd8e0;
 
   /* 書体 */
   --font-display: var(--font-display-src), "Helvetica Neue", sans-serif;
   --font-jp: var(--font-jp-src), "Hiragino Sans", sans-serif;
   --font-mono: var(--font-mono-src), ui-monospace, monospace;
-
-  /* イージング */
-  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
-  --ease-in-out-quart: cubic-bezier(0.76, 0, 0.24, 1);
 }
 
 /* ==========================================================================
@@ -41,122 +35,90 @@
 @layer base {
   :root {
     color-scheme: dark only;
-    background-color: var(--color-void);
+    background-color: var(--color-bg);
   }
 
   html {
     -webkit-text-size-adjust: 100%;
   }
 
-  /* 背景色は html だけが持つ。body に置くと固定した海のキャンバスを覆ってしまう。 */
   body {
+    background-color: var(--color-bg);
     color: var(--color-fg);
     font-family: var(--font-jp);
     font-weight: 400;
-    line-height: 1.8;
+    line-height: 1.9;
     letter-spacing: 0.01em;
     overflow-x: hidden;
     -webkit-font-smoothing: antialiased;
   }
 
   ::selection {
-    background-color: var(--color-fg);
-    color: var(--color-void);
+    background-color: var(--color-cyan);
+    color: var(--color-bg);
   }
 
   :focus-visible {
-    outline: 1px solid var(--color-fg);
+    outline: 1px solid var(--color-cyan);
     outline-offset: 4px;
-  }
-
-  /* 走査線ひとつぶんのざらつき。黒ベタが平坦に見えないように。 */
-  body::after {
-    content: "";
-    position: fixed;
-    inset: 0;
-    z-index: 70;
-    pointer-events: none;
-    opacity: 0.028;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E");
   }
 }
 
 /* ==========================================================================
-   ユーティリティ
+   ユーティリティ（最小限）
    ========================================================================== */
 
-/** 小さい欧文ラベル。座標や区分の表示に使う。 */
-@utility label {
-  font-family: var(--font-mono);
-  font-size: 0.6875rem;
-  font-weight: 500;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  line-height: 1.4;
-}
-
-/** 大見出し。詰めて、太く、行間を潰す。 */
-@utility display {
-  font-family: var(--font-display);
-  font-weight: 800;
-  line-height: 0.86;
-  letter-spacing: -0.035em;
-}
-
-/** 中見出し。display より少しゆるめる。 */
-@utility display-soft {
-  font-family: var(--font-display);
-  font-weight: 600;
-  line-height: 1.05;
-  letter-spacing: -0.02em;
-}
-
+/** 版面。 */
 @utility measure {
   width: 100%;
-  max-width: 92rem;
+  max-width: 88rem;
   margin-inline: auto;
   padding-inline: 1.25rem;
 
   @media (width >= 48rem) {
-    padding-inline: 2.5rem;
-  }
-
-  @media (width >= 80rem) {
-    padding-inline: 4rem;
+    padding-inline: 2.25rem;
   }
 }
 
-/** ホバーで下線が左から伸びるリンク。 */
-@utility underline-sweep {
-  position: relative;
+/** 欧文見出し。名前と数少ない英字にだけ使う。 */
+@utility display {
+  font-family: var(--font-display);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.01em;
+}
 
-  &::after {
-    content: "";
-    position: absolute;
-    left: 0;
-    bottom: -0.15em;
-    width: 100%;
-    height: 1px;
-    background-color: currentColor;
-    transform: scaleX(0);
-    transform-origin: right;
-    transition: transform 0.5s var(--ease-out-expo);
-  }
+/** 等幅の小さな添字。ステータス行・日付・年に。 */
+@utility label {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  line-height: 1.6;
+}
 
-  &:hover::after {
-    transform: scaleX(1);
-    transform-origin: left;
+/** ゆっくり現れる。FadeIn コンポーネントが .is-visible を付ける。 */
+@utility fade-in {
+  opacity: 0;
+  translate: 0 0.5rem;
+  transition:
+    opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+    translate 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+
+  &.is-visible {
+    opacity: 1;
+    translate: 0 0;
   }
 }
 
 /* ==========================================================================
-   本文組版
+   本文組版（Markdown の出力に当てる）
    ========================================================================== */
 
 .prose {
   font-size: 1rem;
   line-height: 2;
-  color: #c8c8c8;
+  color: var(--color-fg-muted);
 }
 
 .prose > * + * {
@@ -164,20 +126,17 @@
 }
 
 .prose h2 {
-  font-family: var(--font-display);
+  font-size: 1.25rem;
   font-weight: 700;
-  font-size: clamp(1.375rem, 1.1rem + 1.1vw, 1.75rem);
-  line-height: 1.35;
-  letter-spacing: -0.02em;
+  line-height: 1.6;
   color: var(--color-fg);
-  margin-top: 3.4em;
+  margin-top: 3.2em;
 }
 
 .prose h3 {
-  font-family: var(--font-display);
-  font-weight: 600;
-  font-size: 1.125rem;
-  line-height: 1.5;
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1.6;
   color: var(--color-fg);
   margin-top: 2.4em;
 }
@@ -190,61 +149,41 @@
 .prose a {
   color: var(--color-fg);
   text-decoration: underline;
-  text-decoration-color: var(--color-line-bright);
+  text-decoration-color: var(--color-cyan);
   text-underline-offset: 0.28em;
-  transition: text-decoration-color 0.3s;
 }
 
 .prose a:hover {
-  text-decoration-color: var(--color-fg);
+  color: var(--color-cyan);
 }
 
 .prose strong {
   color: var(--color-fg);
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .prose ul,
 .prose ol {
-  padding-left: 1.4em;
-}
-
-.prose ul {
-  list-style: none;
-}
-
-.prose ul > li {
-  position: relative;
-}
-
-.prose ul > li::before {
-  content: "";
-  position: absolute;
-  left: -1.2em;
-  top: 0.95em;
-  width: 0.5em;
-  height: 1px;
-  background-color: var(--color-fg-faint);
+  padding-left: 1.5em;
+  list-style: disc;
 }
 
 .prose ol {
   list-style: decimal;
 }
 
-.prose ol > li::marker {
-  font-family: var(--font-mono);
-  font-size: 0.85em;
+.prose li + li {
+  margin-top: 0.4em;
+}
+
+.prose li::marker {
   color: var(--color-fg-faint);
 }
 
-.prose li + li {
-  margin-top: 0.5em;
-}
-
 .prose blockquote {
-  border-left: 1px solid var(--color-line-bright);
-  padding-left: 1.4em;
-  color: var(--color-fg-muted);
+  border-left: 2px solid var(--color-line);
+  padding-left: 1.3em;
+  color: var(--color-fg-faint);
 }
 
 .prose blockquote > :first-child {
@@ -257,17 +196,16 @@
 }
 
 .prose figure figcaption {
-  margin-top: 0.8em;
+  margin-top: 0.7em;
   font-family: var(--font-mono);
-  font-size: 0.6875rem;
-  letter-spacing: 0.12em;
+  font-size: 0.75rem;
   color: var(--color-fg-faint);
 }
 
 .prose hr {
   border: 0;
   border-top: 1px solid var(--color-line);
-  margin-block: 3.5em;
+  margin-block: 3em;
 }
 
 .prose table {
@@ -279,37 +217,32 @@
 .prose th,
 .prose td {
   border-bottom: 1px solid var(--color-line);
-  padding: 0.7em 0.9em 0.7em 0;
+  padding: 0.6em 0.9em 0.6em 0;
   text-align: left;
 }
 
 .prose th {
-  font-family: var(--font-mono);
-  font-size: 0.6875rem;
-  font-weight: 500;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--color-fg-muted);
+  font-weight: 700;
+  color: var(--color-fg);
 }
 
 .prose :not(pre) > code {
   font-family: var(--font-mono);
   font-size: 0.85em;
-  background-color: var(--color-surface-raised);
+  background-color: #16191e;
   color: var(--color-fg);
-  padding: 0.18em 0.45em;
-  border-radius: 2px;
+  padding: 0.15em 0.45em;
+  border-radius: 3px;
 }
 
 .prose pre {
   font-family: var(--font-mono);
   font-size: 0.8125rem;
-  line-height: 1.75;
-  padding: 1.4rem 1.5rem;
-  border: 1px solid var(--color-line);
-  border-radius: 4px;
+  line-height: 1.8;
+  padding: 1.3rem 1.4rem;
+  border-radius: 6px;
   overflow-x: auto;
-  background-color: #0d0d0d !important;
+  background-color: #101318 !important;
 }
 
 .prose pre code {
@@ -318,26 +251,17 @@
   padding: 0;
 }
 
-/* シンタックスハイライトもモノクロームに寄せる。色相を捨てて明度だけで組む。 */
+/* コードの色は落ち着いた明度差だけにする */
 .prose pre span {
   color: inherit !important;
-  filter: grayscale(1) brightness(1.7);
-}
-
-.prose [data-rehype-pretty-code-title] {
-  font-family: var(--font-mono);
-  font-size: 0.6875rem;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--color-fg-muted);
-  padding: 0 0 0.7em;
+  filter: grayscale(0.6) brightness(1.5);
 }
 
 .prose .heading-anchor {
   color: var(--color-fg-faint);
   text-decoration: none;
   margin-left: 0.4em;
-  font-size: 0.7em;
+  font-size: 0.75em;
   opacity: 0;
   transition: opacity 0.2s;
 }
@@ -348,7 +272,7 @@
 }
 
 /* ==========================================================================
-   モーション。reduce 指定時は演出を全部止める。
+   モーション。reduce 指定時は演出を止める。
    ========================================================================== */
 
 @media (prefers-reduced-motion: reduce) {
@@ -359,5 +283,10 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
     scroll-behavior: auto !important;
+  }
+
+  .fade-in {
+    opacity: 1 !important;
+    translate: 0 0 !important;
   }
 }

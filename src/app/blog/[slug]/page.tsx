@@ -2,8 +2,6 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Reveal } from "@/components/motion/Reveal";
-import { SplitHeading } from "@/components/motion/SplitHeading";
 import {
   formatDate,
   getPost,
@@ -13,7 +11,6 @@ import {
 } from "@/lib/content";
 import { PostNav } from "../_components/PostNav";
 import { TableOfContents } from "../_components/TableOfContents";
-import { TagRow } from "../_components/TagRow";
 
 /** Next.js 16 では params が Promise で渡る。 */
 type PostPageProps = {
@@ -57,52 +54,52 @@ export default async function PostPage({ params }: PostPageProps) {
   const showToc = headings.length >= 2;
 
   return (
-    <article className="pt-32 pb-28 sm:pt-40 sm:pb-40">
-      {/* 扉。日付とタグを細く置いて、タイトルだけを大きく立てる。 */}
-      <header className="measure">
-        <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
-          <time dateTime={post.date} className="label text-fg-muted">
+    <article className="measure pt-32 pb-28 sm:pt-40 sm:pb-40">
+      <p>
+        <Link
+          href="/blog"
+          className="label text-fg-muted transition-colors hover:text-cyan"
+        >
+          ← 記録
+        </Link>
+      </p>
+
+      <header className="mt-10">
+        <div className="flex flex-wrap items-baseline gap-x-5 gap-y-1">
+          <time dateTime={post.date} className="label text-fg-faint">
             {formatDate(post.date)}
           </time>
-          <span aria-hidden="true" className="h-px w-8 bg-line-bright" />
-          <TagRow tags={post.tags} />
+          {post.tags.length > 0 ? (
+            <p className="label text-fg-faint">
+              タグ: {post.tags.join(" / ")}
+            </p>
+          ) : null}
         </div>
 
-        <SplitHeading
-          as="h1"
-          lines={[post.title]}
-          className="font-jp mt-8 max-w-[54rem] text-[clamp(1.875rem,5.4vw,4rem)] leading-[1.22] font-bold tracking-[-0.02em] sm:mt-10"
-        />
-
-        <Reveal delay={0.15}>
-          <p className="mt-8 max-w-[38rem] text-sm leading-loose text-fg-muted">
-            {post.excerpt}
-          </p>
-        </Reveal>
+        <h1 className="mt-4 max-w-[42rem] text-2xl leading-relaxed font-bold">
+          {post.title}
+        </h1>
       </header>
 
-      {/* カバーは持っている記事だけ。多くの記事は文字だけで始める。 */}
       {post.cover ? (
-        <Reveal className="measure mt-16 sm:mt-20">
-          <div className="relative aspect-[16/9] w-full overflow-hidden bg-surface">
-            <Image
-              src={post.cover}
-              alt={post.title}
-              fill
-              priority
-              sizes="(min-width: 1280px) 84rem, 100vw"
-              className="object-cover"
-            />
-          </div>
-        </Reveal>
+        <div className="relative mt-10 aspect-[16/9] w-full max-w-[42rem] overflow-hidden">
+          <Image
+            src={post.cover}
+            alt={post.title}
+            fill
+            priority
+            sizes="(min-width: 48rem) 42rem, 100vw"
+            className="object-cover"
+          />
+        </div>
       ) : null}
 
-      <div className="measure mt-16 border-t border-line pt-14 sm:mt-24 sm:pt-20 lg:grid lg:grid-cols-[minmax(0,1fr)_14rem] lg:gap-16 xl:gap-24">
+      <div className="mt-12 lg:grid lg:grid-cols-[minmax(0,42rem)_14rem] lg:gap-16">
         {/* 目次。DOM 上は本文より前に置き、広い画面だけ右の段へ送る。 */}
         {showToc ? (
           <TableOfContents
             headings={headings}
-            className="mb-14 border-y border-line py-6 lg:sticky lg:top-28 lg:col-start-2 lg:row-start-1 lg:mb-0 lg:self-start lg:border-y-0 lg:border-l lg:border-line lg:py-0 lg:pl-6"
+            className="mb-12 lg:sticky lg:top-28 lg:col-start-2 lg:row-start-1 lg:mb-0 lg:self-start"
           />
         ) : null}
 
@@ -111,32 +108,14 @@ export default async function PostPage({ params }: PostPageProps) {
           外部からの入力は一切通らないため dangerouslySetInnerHTML で差し込んでいる。
         */}
         <div
-          className="prose max-w-[46rem] lg:col-start-1 lg:row-start-1"
+          className="prose max-w-[42rem] lg:col-start-1 lg:row-start-1"
           dangerouslySetInnerHTML={{ __html: html }}
         />
       </div>
 
-      {/* 前後の記事 */}
-      <Reveal as="footer" className="measure mt-28 sm:mt-36">
-        <p className="label text-fg-faint">Next Reading</p>
-        <div className="mt-10 border-t border-line pt-12">
-          <PostNav newer={newer} older={older} />
-        </div>
-
-        <div className="mt-20 border-t border-line pt-8">
-          <Link
-            href="/blog"
-            className="group inline-flex flex-wrap items-baseline gap-x-4 gap-y-1"
-          >
-            <span className="label underline-sweep text-fg-muted transition-colors duration-500 group-hover:text-fg">
-              ← Back to Index
-            </span>
-            <span className="text-xs text-fg-faint transition-colors duration-500 group-hover:text-fg-muted">
-              Journal 一覧へ戻る
-            </span>
-          </Link>
-        </div>
-      </Reveal>
+      <footer className="mt-24 max-w-[42rem] border-t border-line pt-6">
+        <PostNav newer={newer} older={older} />
+      </footer>
     </article>
   );
 }

@@ -1,18 +1,22 @@
-import { AboutPreview } from "@/components/home/AboutPreview";
-import { Contact } from "@/components/home/Contact";
-import { Hero } from "@/components/home/Hero";
-import { JournalPreview } from "@/components/home/JournalPreview";
-import { WorksPreview } from "@/components/home/WorksPreview";
-import { getFeaturedWorks, getRecentPosts } from "@/lib/content";
+import { JournalList } from "@/components/home/JournalList";
+import { Plate } from "@/components/home/Plate";
+import { WorksTable } from "@/components/home/WorksTable";
+import { getRecentPosts, getWorks } from "@/lib/content";
+import { site } from "@/lib/site";
 
 export default function Home() {
   return (
     <>
-      <Hero />
-      <WorksPreview works={getFeaturedWorks(4)} />
-      <JournalPreview posts={getRecentPosts(3)} />
-      <AboutPreview />
-      <Contact />
+      <h1 className="sr-only">
+        {site.fullName} — {site.role}
+      </h1>
+
+      <div className="measure">
+        <Plate />
+      </div>
+
+      <WorksTable works={getWorks()} />
+      <JournalList posts={getRecentPosts(5)} />
     </>
   );
 }

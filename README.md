@@ -1,6 +1,6 @@
 # shimano-yuuki.github.io
 
-ポートフォリオと記録。サイト全体が1本の水柱で、スクロールが潜水になる WebGL の個人サイト。
+ポートフォリオと記録。黒地に情報が主役の、ミニマルな個人サイト。
 
 **公開先** → https://shimano-yuuki.github.io
 
@@ -83,7 +83,6 @@ frontmatter の必須項目が抜けていたり日付の形式が違うと、`n
 | | |
 | --- | --- |
 | `docs/DESIGN.md` | 意匠の決まり（配色・書体・可読性基準） |
-| `docs/OCEAN.md` | 海の仕組みと調整パラメータの早見表 |
 | `docs/CONTENT.md` | content/ の frontmatter 仕様 |
 | `docs/DECISIONS.md` | なぜこうなったかの経緯 |
 | `.claude/skills/` | 定型作業の手順（調整・追加・検証・デプロイ） |
@@ -98,14 +97,13 @@ frontmatter の必須項目が抜けていたり日付の形式が違うと、`n
 | `src/lib/site.ts` | 名前・肩書き・連絡先。**プロフィールを直すならまずここ** |
 | `src/lib/content.ts` | `content/` を読んで型を検証する層 |
 | `src/lib/markdown.ts` | Markdown → HTML（GFM・見出しリンク・コードハイライト） |
-| `src/components/motion/` | Lenis の慣性スクロールと出現演出 |
-| `src/components/ocean/` | 海。流体・深度・生き物・光（詳細は `docs/OCEAN.md`） |
+| `src/components/FadeIn.tsx` | 唯一の出現演出（IntersectionObserver 数行） |
+| `src/components/home/` | 色面プレート・ステータス行・作品表 |
 
 ## 演出について
 
-流体・生き物・慣性スクロール・出現アニメーションは、OS の「視差効果を減らす」が
-有効なときはすべて静止します。WebGL 非対応の環境では深度連動のグラデーションに
-落ちます。どちらの場合も内容はすべて読めます。
+演出は「そっと現れる」1種類と、色面の中の時計だけです。
+OS の「視差効果を減らす」が有効なときは出現も即時表示になります。
 
 ## 公開
 
