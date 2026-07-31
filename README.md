@@ -86,7 +86,7 @@ frontmatter の必須項目が抜けていたり日付の形式が違うと、`n
 | `docs/CONTENT.md` | content/ の frontmatter 仕様 |
 | `docs/DECISIONS.md` | なぜこうなったかの経緯 |
 | `.claude/skills/` | 定型作業の手順（調整・追加・検証・デプロイ） |
-| `scripts/verify/` | 実測ツール（潜水スクショ・コントラスト・fps） |
+| `scripts/verify/` | 実測ツール（コントラスト・動きを減らす設定） |
 
 ## 構成
 

@@ -23,7 +23,7 @@ gh run watch <run-id> --repo shimano-yuuki/shimano-yuuki.github.io
 ```
 
 公開後の確認: https://shimano-yuuki.github.io を開くか
-`node scripts/verify/dive.mjs /tmp/shots https://shimano-yuuki.github.io`
+`curl -sI https://shimano-yuuki.github.io | head -1`（200 が返ること）
 
 ## 無料枠について（調査済み・2026-07）
 
