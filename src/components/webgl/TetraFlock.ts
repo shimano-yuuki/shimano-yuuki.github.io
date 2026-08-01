@@ -132,7 +132,13 @@ function buildFishGeometry({
   body.computeVertexNormals();
 
   // ---- ヒレ。すべて薄板の三角形 ----
+  // 倍率は「付け根は動かさず、先端ほど効く」ように掛ける。
+  // 一様に拡大すると付け根ごと体表から浮いてしまう（エンゼルで顕著だった）
+  const grow = (y: number, from: number, span: number) =>
+    Math.min(Math.max((Math.abs(y) - from) / span, 0), 1);
+
   // 尾びれ。付け根 (-0.41, 0) を支点に大きさを変える
+  const tailScaleY = Math.max(tail, depth * 0.75);
   const tailFin = [
     -0.41, 0.025, 0, -0.62, 0.15, 0, -0.52, 0.014, 0,
     -0.62, 0.15, 0, -0.55, 0.045, 0, -0.52, 0.014, 0,
@@ -140,18 +146,22 @@ function buildFishGeometry({
     -0.62, -0.15, 0, -0.52, -0.014, 0, -0.55, -0.045, 0,
   ].map((v, i) => {
     if (i % 3 === 0) return -0.41 + (v + 0.41) * tail;
-    if (i % 3 === 1) return v * Math.max(tail, depth * 0.75);
+    if (i % 3 === 1) return v * (1 + (tailScaleY - 1) * grow(v, 0.03, 0.1));
     return v;
   });
-  // 背びれと尻びれ。体高に追従し、finHeight でさらに伸ばす（エンゼルの帆）
-  const vertical = depth * finHeight;
+  // 背びれと尻びれ。付け根は体高（depth）に追従して体表に残り、
+  // 先端だけ finHeight でさらに伸びる（エンゼルの帆）
   const dorsalAnal = [
     // 背びれ
     0.1, 0.13, 0, 0.02, 0.24, 0, -0.05, 0.11, 0,
     0.02, 0.24, 0, -0.09, 0.16, 0, -0.05, 0.11, 0,
     // 尻びれ（カラシンの長い尻びれ）
     -0.05, -0.12, 0, -0.16, -0.19, 0, -0.28, -0.07, 0,
-  ].map((v, i) => (i % 3 === 1 ? v * vertical : v));
+  ].map((v, i) =>
+    i % 3 === 1
+      ? v * depth * (1 + (finHeight - 1) * grow(v, 0.11, 0.13))
+      : v,
+  );
   // 胸びれ（左右）。後ろ下へ開く
   const pectorals = [
     0.24, -0.04, 0.05, 0.1, -0.11, 0.11, 0.09, -0.05, 0.07,

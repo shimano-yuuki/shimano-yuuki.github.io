@@ -116,7 +116,7 @@ const SPECIES: FlockOptions[] = [
       belly: color(0.44, 0.46, 0.48),
       bars: 0.9,
     },
-    body: { depth: 2.3, finHeight: 2.4, tail: 0.8 },
+    body: { depth: 2.3, finHeight: 1.45, tail: 0.8 },
     bodyLength: 0.17,
     speed: 0.42,
     z: 0.35,
