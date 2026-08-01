@@ -1,25 +1,23 @@
 @import "tailwindcss";
 
 /* ==========================================================================
-   デザイントークン — 黒地にクリーム白、色は「面」で一度だけ
-   飾りは足さない。速さと組版がこのサイトの装いになる。
+   デザイントークン — 水草水槽の緑にクリーム白
+   背景の水槽（WebGL）が唯一の装飾。文字組みは飾らない。
    ========================================================================== */
 
 @theme {
-  /* 地。わずかに青みの黒 */
+  /* 地。わずかに青みの黒。WebGL 不可のときはこの色だけが見える */
   --color-bg: #0b0d10;
 
   /* 文字。クリーム白と、その減衰2段 */
   --color-fg: #f2f1e8;
   --color-fg-muted: #b9b7ac;
-  --color-fg-faint: #9d9b90;
+  --color-fg-faint: #a8a69b;
 
   /* 罫。作品表の行区切りにだけ使う */
   --color-line: #22252b;
 
-  /* 海から持ってきた色。ヒーローの色面と、細部の差しにだけ使う */
-  --color-plate: #0e5a78;
-  --color-plate-deep: #071c2c;
+  /* 差し色。水明かりのシアン。リンク下線・ホバー・ステータス行のみ */
   --color-cyan: #8fd8e0;
 
   /* 書体 */
@@ -43,7 +41,7 @@
   }
 
   body {
-    background-color: var(--color-bg);
+    /* 背景は :root が塗る。ここで塗ると固定背景（-z-10 のキャンバス）を覆ってしまう */
     color: var(--color-fg);
     font-family: var(--font-jp);
     font-weight: 400;
@@ -135,37 +133,9 @@
 }
 
 /* ==========================================================================
-   数少ない動き。等深線の漂いと、ステータス点の明滅
+   数少ない DOM 側の動き。ステータス点の明滅だけ
+   （水の演出はすべて背景の WebGL が受け持つ）
    ========================================================================== */
-
-/* 潮のようにゆっくり。1周 30 秒前後、行って戻る */
-@keyframes contour-drift-a {
-  from {
-    transform: translate(0, 0) scale(1);
-  }
-  to {
-    transform: translate(-2.2%, 1.4%) scale(1.05);
-  }
-}
-
-@keyframes contour-drift-b {
-  from {
-    transform: translate(0, 0) scale(1);
-  }
-  to {
-    transform: translate(1.8%, -1.2%) scale(0.96);
-  }
-}
-
-.contour-a {
-  animation: contour-drift-a 28s ease-in-out infinite alternate;
-  transform-origin: 60% 55%;
-}
-
-.contour-b {
-  animation: contour-drift-b 36s ease-in-out infinite alternate;
-  transform-origin: 58% 58%;
-}
 
 @keyframes status-pulse {
   0%, 100% {

@@ -48,7 +48,12 @@ const HIDE_TEXT = `main *, footer * {
 }`;
 
 const browser = await chromium.launch({ args: ["--enable-unsafe-swiftshader"] });
-const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+// 背景の流体が動いていると2枚の差分が取れないため、reduced-motion で静止させる。
+// 静止フレームも同じ配色ランプで描かれるので、背景色の実測として有効。
+const page = await browser.newPage({
+  viewport: { width: 1440, height: 900 },
+  reducedMotion: "reduce",
+});
 const helper = await browser.newPage();
 await helper.setContent("<canvas id='a'></canvas><canvas id='b'></canvas>");
 

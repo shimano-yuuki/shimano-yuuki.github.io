@@ -17,12 +17,12 @@ export default function BlogPage() {
     <div className="measure pt-32 pb-28 sm:pt-40 sm:pb-40">
       <header className="flex items-baseline justify-between gap-6">
         <h1 className="text-sm text-fg-faint">記録</h1>
-        <p className="label text-fg-faint">{posts.length}本</p>
+        <p className="label text-fg-faint">{posts.length} 件</p>
       </header>
 
       {years.length === 0 ? (
         <p className="mt-16 text-sm text-fg-muted">
-          まだ記事がありません。最初の1本を準備しています。
+          まだ記事がありません。最初の記事を準備しています。
         </p>
       ) : (
         years.map(({ year, posts: yearPosts }) => (

@@ -5,7 +5,7 @@ import type { Work } from "@/lib/content";
 /**
  * 作品の定義リスト表。左に項目名、右に値。区切りは 1px の横罫だけ。
  * 参照サイト（tndhjm.com）の Title / Client / Year / Role の型を、
- * エンジニアの項目（名称 / 年 / 役割 / 技術）に置き換えたもの。
+ * エンジニアの項目（作品名 / 年 / 担当 / 技術）に置き換えたもの。
  */
 export function WorksTable({ works }: { works: Work[] }) {
   return (
@@ -24,7 +24,7 @@ export function WorksTable({ works }: { works: Work[] }) {
               href={`/works/${work.slug}`}
               className="group grid gap-x-8 gap-y-1 py-6 sm:grid-cols-[7rem_minmax(0,1fr)] sm:py-7"
             >
-              <span className="text-sm text-fg-faint">名称</span>
+              <span className="text-sm text-fg-faint">作品名</span>
               <span className="text-lg font-bold transition-colors group-hover:text-cyan">
                 {work.title}
                 {work.subtitle ? (
@@ -39,7 +39,7 @@ export function WorksTable({ works }: { works: Work[] }) {
 
               {work.role.length > 0 ? (
                 <>
-                  <span className="mt-2 text-sm text-fg-faint sm:mt-0">役割</span>
+                  <span className="mt-2 text-sm text-fg-faint sm:mt-0">担当</span>
                   <span className="text-sm text-fg-muted">
                     {work.role.join(" / ")}
                   </span>

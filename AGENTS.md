@@ -7,7 +7,8 @@ This version has breaking changes — APIs, conventions, and file structure may 
 # AGENTS — このリポジトリの運用契約
 
 個人サイト（https://shimano-yuuki.github.io）。
-黒地に情報が主役のミニマルなポートフォリオ（参照: tndhjm.com 型）。
+背景に three.js の水草水槽（熱帯魚 + 水草）を敷いた、落ち着いた自然が
+テーマのポートフォリオ。文字組みの側は tndhjm.com 型のミニマルを維持。
 
 ## ドキュメントは 1関心事 = 1置き場所
 

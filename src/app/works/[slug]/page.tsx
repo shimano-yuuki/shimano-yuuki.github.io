@@ -81,7 +81,7 @@ export default async function WorkPage({ params }: Props) {
         </MetaRow>
 
         {work.role.length > 0 ? (
-          <MetaRow label="役割">
+          <MetaRow label="担当">
             <span className="text-sm text-fg-muted">{work.role.join(" / ")}</span>
           </MetaRow>
         ) : null}

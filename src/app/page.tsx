@@ -1,5 +1,5 @@
+import { Hero } from "@/components/home/Hero";
 import { JournalList } from "@/components/home/JournalList";
-import { Plate } from "@/components/home/Plate";
 import { WorksTable } from "@/components/home/WorksTable";
 import { getRecentPosts, getWorks } from "@/lib/content";
 import { site } from "@/lib/site";
@@ -12,7 +12,7 @@ export default function Home() {
       </h1>
 
       <div className="measure">
-        <Plate />
+        <Hero />
       </div>
 
       <WorksTable works={getWorks()} />
