@@ -49,6 +49,8 @@ export type FlockOptions = {
   speed?: number;
   /** 好みの泳層（NDC y）。コリドラスは底、ハチェットは水面近く */
   preferredY?: number | null;
+  /** 隠れ家（岩陰）。指定すると、個体ごとに時々ここへ潜りに行く */
+  shelter?: { x: number; y: number } | null;
   /** 奥行き。群れごとに少しずらすと重なりが読める */
   z?: number;
 };
@@ -221,6 +223,7 @@ export class TetraFlock {
   private bodyLength: number;
   private speed: number;
   private preferredY: number | null;
+  private shelter: { x: number; y: number } | null;
   private z: number;
   /** 回遊目標の位相。群れごとにずらして、皆が同じ点に集まらないようにする */
   private wanderPhase = Math.random() * Math.PI * 2;
@@ -234,12 +237,14 @@ export class TetraFlock {
     bodyLength = 0.075,
     speed = 1,
     preferredY = null,
+    shelter = null,
     z = 0,
   }: FlockOptions) {
     this.count = count;
     this.bodyLength = bodyLength;
     this.speed = speed;
     this.preferredY = preferredY;
+    this.shelter = shelter;
     this.z = z;
 
     this.positions = new Float32Array(count * 2);
@@ -248,8 +253,9 @@ export class TetraFlock {
     this.yaws = new Float32Array(count);
     this.prevHeadings = new Float32Array(count);
 
-    // 群れらしく、ひとかたまりの周辺にばらまいて始める
-    const cx = Math.random() * 1.2 - 0.6;
+    // 群れらしく、ひとかたまりの周辺にばらまいて始める。
+    // 文字は画面の左に載るので、魚の生活圏は右半分
+    const cx = 0.3 + Math.random() * 0.6;
     const cy =
       preferredY ?? (Math.random() > 0.5 ? 0.55 : -0.55);
     const heading = Math.random() > 0.5 ? 0 : Math.PI;
@@ -315,9 +321,11 @@ export class TetraFlock {
     this.lastTime = time;
     if (dt === 0) return;
 
-    // 群れ全体が追いかける回遊目標。ゆっくり動く点で、群れが一体で曲がる理由になる
+    // 群れ全体が追いかける回遊目標。ゆっくり動く点で、群れが一体で曲がる理由になる。
+    // 中心を右に置き、文字のある左半分へはほとんど入らない
     const wt = time + this.wanderPhase * 20.0;
-    const targetX = Math.sin(wt * 0.05) * 0.8 + Math.sin(wt * 0.013) * 0.3;
+    const targetX =
+      0.4 + Math.sin(wt * 0.05) * 0.45 + Math.sin(wt * 0.013) * 0.2;
     const targetY =
       Math.sin(wt * 0.083 + 1.7) * 0.55 * Math.sign(Math.sin(wt * 0.011) || 1);
 
@@ -383,6 +391,20 @@ export class TetraFlock {
         fy += (y >= 0 ? 1 : -1) * (1 - Math.abs(y) / 0.34) * 0.26;
       }
 
+      // 岩陰に潜る。個体ごとに位相のずれた「潜りたい波」を持ち、
+      // 波が高い間だけ隠れ家（岩の裏）へ強く引かれる。
+      // 岩は魚より手前に描かれるので、着くと本当に見えなくなる
+      if (this.shelter) {
+        const urge = Math.pow(
+          Math.max(Math.sin(time * 0.05 + i * 1.9 + this.wanderPhase), 0),
+          6,
+        );
+        if (urge > 0.01) {
+          fx += (this.shelter.x - x) * urge * 2.4;
+          fy += (this.shelter.y - y) * urge * 2.4;
+        }
+      }
+
       // カーソルからの逃避。群れが割れて、離れると再結合する
       if (pointer) {
         const dx = x - pointer.x;
@@ -395,9 +417,12 @@ export class TetraFlock {
         }
       }
 
-      // 上下の壁は柔らかく押し返す
+      // 水槽のガラス面。上下と左右の壁を柔らかく押し返す。
+      // 左の壁を内側（-0.1）に置いて、文字のある左側を空けておく
       if (y > 0.88) fy -= (y - 0.88) * 3;
       if (y < -0.88) fy += (-0.88 - y) * 3;
+      if (x < -0.1) fx += (-0.1 - x) * 2.2;
+      if (x > 1.12) fx -= (x - 1.12) * 2.2;
 
       v[ix] += fx * dt;
       v[ix + 1] += fy * dt;
@@ -422,10 +447,6 @@ export class TetraFlock {
 
       p[ix] += v[ix] * dt;
       p[ix + 1] += v[ix + 1] * dt;
-
-      // 横は画面外でループ
-      if (p[ix] > 1.3) p[ix] = -1.3;
-      else if (p[ix] < -1.3) p[ix] = 1.3;
     }
 
     // --- 姿勢を決めてインスタンス行列へ ---

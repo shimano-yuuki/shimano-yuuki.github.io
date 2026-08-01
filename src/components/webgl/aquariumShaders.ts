@@ -56,17 +56,23 @@ export const waterFragment = /* glsl */ `
   }
 
   void main() {
-    // 底の闇から、上へ向かうほど深い青の水明かりへ
-    vec3 color = mix(INK, DEEP, smoothstep(-0.15, 1.1, vUv.y));
+    // 文字は画面の左に載るので、水の明かりはすべて右へ寄せ、
+    // 左はほぼ地の黒に沈める
+    float right = smoothstep(0.25, 0.9, vUv.x);
+
+    // 底の闇から、上へ向かうほど深い青の水明かりへ（右側だけ）
+    vec3 color = mix(
+      INK, DEEP, smoothstep(-0.15, 1.1, vUv.y) * (0.25 + right * 0.75)
+    );
 
     // 水のむら。大きくゆっくり動く濃淡で「水の量感」を出す。
     // 混ぜすぎ注意: BLUE は明るく、上に載る小ラベルのコントラストをすぐ食う
     float body = fbm(
       vec2(vUv.x * uAspect * 1.1, vUv.y * 1.5) + vec2(uTime * 0.012, 0.0)
     );
-    color = mix(color, BLUE, body * 0.11 * smoothstep(0.1, 0.95, vUv.y));
+    color = mix(color, BLUE, body * 0.09 * right * smoothstep(0.1, 0.95, vUv.y));
 
-    // ---- 光条。左上から斜めに差し込み、うねりで幅が揺れる ----
+    // ---- 光条。右上から斜めに差し込み、うねりで幅が揺れる ----
     float slant = vUv.x * uAspect + (1.0 - vUv.y) * 0.6;
     float beams =
         pow(max(sin(slant * 5.0 - uTime * 0.07), 0.0), 8.0) * 0.7
@@ -75,15 +81,15 @@ export const waterFragment = /* glsl */ `
     beams *= 0.6 + fbm(vec2(slant * 2.0, uTime * 0.04)) * 0.7;
     // 上ほど明るく、下へ伸びるほど減衰する
     beams *= smoothstep(-0.35, 1.0, vUv.y);
-    color += MINT * beams * 0.035;
+    color += MINT * beams * 0.03 * right;
 
-    // ---- カースティクス。水面近くの帯にだけ、ごく薄く ----
+    // ---- カースティクス。水面近くの帯にだけ、ごく薄く（右側だけ） ----
     vec2 cUv = vec2(vUv.x * uAspect, vUv.y) * 3.2;
     float t = uTime * 0.1;
     float a = fbm(cUv + vec2(t, t * 0.7));
     float b = fbm(cUv * 1.37 - vec2(t * 0.8, t * 1.1));
     float web = pow(max(1.0 - abs(a - b) * 3.4, 0.0), 12.0);
-    color += MINT * web * smoothstep(0.55, 1.0, vUv.y) * 0.035;
+    color += MINT * web * smoothstep(0.55, 1.0, vUv.y) * 0.035 * right;
 
     // 四隅を静かに落とす
     float vignette = 1.0 - length((vUv - vec2(0.5, 0.45)) * vec2(1.1, 1.0)) * 0.3;

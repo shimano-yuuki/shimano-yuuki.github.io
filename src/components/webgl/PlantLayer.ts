@@ -67,9 +67,12 @@ function makeBladeMesh(blades: BladeSpec[], renderOrder: number) {
   return mesh;
 }
 
-/** 左右どちらかの袖に寄せた根元位置。中央（本文の帯）を空ける。 */
+/**
+ * 左右どちらかの袖に寄せた根元位置。中央（本文の帯）を空ける。
+ * 文字は左に載るので、株は右の袖に多めに植える。
+ */
 function sideRoot(minOffset: number, spread: number) {
-  const side = Math.random() > 0.5 ? 1 : -1;
+  const side = Math.random() < 0.35 ? -1 : 1;
   return side * (minOffset + Math.pow(Math.random(), 0.8) * spread);
 }
 
@@ -82,11 +85,12 @@ export class PlantLayer {
       const rootX = sideRoot(0.14, 0.92);
       back.push({
         rootX,
-        // 袖に近いほど丈を高く。中央寄りの株は短く沈める
-        height: 0.45 + Math.abs(rootX) * 0.55 + Math.random() * 0.3,
+        // 袖に近いほど丈を高く。中央寄りの株は短く沈める。
+        // 前景であって主役ではないので、画面の下 1/4 に収める
+        height: 0.22 + Math.abs(rootX) * 0.28 + Math.random() * 0.16,
         lean: (Math.random() - 0.5) * 0.5,
         phase: Math.random() * Math.PI * 2,
-        width: 0.05 + Math.random() * 0.06,
+        width: 0.032 + Math.random() * 0.04,
         // 大半は緑、ときどき赤茶（ロタラ系）を混ぜて単調を避ける
         tone: Math.random() < 0.16 ? 0.5 + Math.random() * 0.35 : Math.random() * 0.2,
         depth: -0.5,
@@ -99,11 +103,11 @@ export class PlantLayer {
       const rootX = sideRoot(0.5, 0.6);
       front.push({
         rootX,
-        height: 0.85 + Math.random() * 0.55,
+        height: 0.4 + Math.random() * 0.28,
         lean: (Math.random() - 0.5) * 0.4,
         phase: Math.random() * Math.PI * 2,
-        // 手前は広葉（エキノドルス系）。太く、暗いシルエットにする
-        width: 0.15 + Math.random() * 0.12,
+        // 手前は広葉（エキノドルス系）。やや太く、暗いシルエットにする
+        width: 0.08 + Math.random() * 0.06,
         tone: Math.random() * 0.15,
         depth: 0.5,
         shade: 0.3 + Math.random() * 0.2,

@@ -6,6 +6,7 @@ import {
   waterFragment,
 } from "./aquariumShaders";
 import { PlantLayer } from "./PlantLayer";
+import { Rocks, SHELTER } from "./Rocks";
 import { TetraFlock, type FlockOptions } from "./TetraFlock";
 
 type Quality = "high" | "low";
@@ -21,22 +22,25 @@ const color = (r: number, g: number, b: number) => new THREE.Color(r, g, b);
  * 住人 10 種。小型カラシンの群れを主役に、
  * 中層のバルブとグラミー、悠然と横切るエンゼルのペア、
  * 底のコリドラス、水面近くのハチェットで泳層を立体的に埋める。
+ * 数は控えめに、体も小さく——水槽が主役で騒がしくならないように。
+ * 小型のテトラとコリドラスは、時々右下の岩陰（SHELTER）に潜る。
  */
 const SPECIES: FlockOptions[] = [
   // カージナルテトラ。藍の輝線と赤い腹の主群
   {
-    count: 14,
+    count: 9,
     look: {
       back: color(0.05, 0.09, 0.1),
       stripe: color(0.3, 0.7, 0.85),
       belly: color(0.58, 0.12, 0.1),
     },
-    bodyLength: 0.075,
+    bodyLength: 0.055,
+    shelter: SHELTER,
     z: 0,
   },
   // ラミーノーズテトラ。銀の体に赤い鼻先
   {
-    count: 10,
+    count: 6,
     look: {
       back: color(0.14, 0.17, 0.16),
       stripe: color(0.55, 0.6, 0.58),
@@ -44,45 +48,47 @@ const SPECIES: FlockOptions[] = [
       nose: color(0.66, 0.1, 0.07),
       noseAmount: 1,
     },
-    bodyLength: 0.078,
+    bodyLength: 0.057,
     z: -0.15,
   },
   // エンバーテトラ。琥珀の小さな群れ
   {
-    count: 9,
+    count: 6,
     look: {
       back: color(0.11, 0.09, 0.055),
       stripe: color(0.82, 0.56, 0.28),
       belly: color(0.6, 0.28, 0.11),
     },
-    bodyLength: 0.058,
+    bodyLength: 0.042,
+    shelter: SHELTER,
     z: 0.1,
   },
   // ブラックネオンテトラ。黒い体に白銀の一本線
   {
-    count: 8,
+    count: 5,
     look: {
       back: color(0.03, 0.038, 0.042),
       stripe: color(0.75, 0.8, 0.75),
       belly: color(0.12, 0.13, 0.13),
     },
-    bodyLength: 0.072,
+    bodyLength: 0.052,
     z: -0.25,
   },
   // グローライトテトラ。半透明の体に橙の輝線
   {
-    count: 8,
+    count: 5,
     look: {
       back: color(0.13, 0.14, 0.13),
       stripe: color(0.9, 0.42, 0.12),
       belly: color(0.3, 0.3, 0.28),
     },
-    bodyLength: 0.068,
+    bodyLength: 0.048,
+    shelter: SHELTER,
     z: 0.2,
   },
   // スマトラ。金の体に黒い横縞、体高のあるバルブ
   {
-    count: 6,
+    count: 4,
     look: {
       back: color(0.42, 0.3, 0.1),
       stripe: color(0.5, 0.38, 0.14),
@@ -90,20 +96,20 @@ const SPECIES: FlockOptions[] = [
       bars: 0.85,
     },
     body: { depth: 1.35 },
-    bodyLength: 0.082,
+    bodyLength: 0.06,
     speed: 1.1,
     z: -0.1,
   },
-  // ゴールデンハニー・ドワーフグラミー。蜂蜜色の3匹
+  // ゴールデンハニー・ドワーフグラミー。蜂蜜色のペア
   {
-    count: 3,
+    count: 2,
     look: {
       back: color(0.5, 0.34, 0.11),
       stripe: color(0.7, 0.5, 0.2),
       belly: color(0.64, 0.44, 0.17),
     },
     body: { depth: 1.5, finHeight: 1.35 },
-    bodyLength: 0.105,
+    bodyLength: 0.078,
     speed: 0.65,
     z: 0.25,
   },
@@ -117,34 +123,35 @@ const SPECIES: FlockOptions[] = [
       bars: 0.9,
     },
     body: { depth: 2.3, finHeight: 1.45, tail: 0.8 },
-    bodyLength: 0.17,
+    bodyLength: 0.125,
     speed: 0.42,
     z: 0.35,
   },
-  // コリドラス。底で暮らすブロンズの働き者
+  // コリドラス。底で暮らすブロンズの働き者。岩陰が大好き
   {
-    count: 4,
+    count: 3,
     look: {
       back: color(0.2, 0.16, 0.11),
       stripe: color(0.3, 0.26, 0.18),
       belly: color(0.33, 0.29, 0.22),
     },
     body: { depth: 1.25 },
-    bodyLength: 0.07,
+    bodyLength: 0.05,
     speed: 0.55,
     preferredY: -0.8,
+    shelter: SHELTER,
     z: 0.15,
   },
   // マーブルハチェット。竜骨の深い胸、水面近くに浮かぶ
   {
-    count: 5,
+    count: 4,
     look: {
       back: color(0.2, 0.22, 0.23),
       stripe: color(0.5, 0.53, 0.55),
       belly: color(0.4, 0.42, 0.44),
     },
     body: { depth: 1.2, keel: 3.2 },
-    bodyLength: 0.08,
+    bodyLength: 0.058,
     speed: 0.8,
     preferredY: 0.74,
     z: -0.3,
@@ -178,6 +185,7 @@ export class AquariumScene {
 
   private flocks: TetraFlock[];
   private plants: PlantLayer;
+  private rocks: Rocks;
   private motes: THREE.Points;
   private moteMaterial: THREE.ShaderMaterial;
 
@@ -240,6 +248,10 @@ export class AquariumScene {
       this.worldScene.add(flock.mesh);
     }
 
+    // ---- 岩組。魚より手前に置き、潜った魚を隠す ----
+    this.rocks = new Rocks();
+    for (const mesh of this.rocks.meshes) this.worldScene.add(mesh);
+
     // ---- 気泡 ----
     const moteCount = this.settings.motes;
     const seeds = new Float32Array(moteCount * 3);
@@ -287,6 +299,7 @@ export class AquariumScene {
 
     this.waterMaterial.uniforms.uAspect.value = this.aspect;
     this.plants.setAspect(this.aspect);
+    this.rocks.setAspect(this.aspect);
     this.moteMaterial.uniforms.uPixelRatio.value = dpr;
   }
 
@@ -377,6 +390,7 @@ export class AquariumScene {
     this.disposed = true;
     for (const flock of this.flocks) flock.dispose();
     this.plants.dispose();
+    this.rocks.dispose();
     this.motes.geometry.dispose();
     this.moteMaterial.dispose();
     this.waterMaterial.dispose();
