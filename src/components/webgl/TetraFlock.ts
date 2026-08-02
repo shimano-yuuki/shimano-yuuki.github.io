@@ -338,10 +338,10 @@ export class TetraFlock {
     if (dt === 0) return;
 
     // 群れ全体が追いかける回遊目標。ゆっくり動く点で、群れが一体で曲がる理由になる。
-    // page では中心を右に置き、文字のある左半分へはほとんど入らない
+    // page では中心を右に置き、文字のある左半分には入らない
     const wt = time + this.wanderPhase * 20.0;
     const targetX =
-      (this.layout === "tank" ? 0 : 0.4) +
+      (this.layout === "tank" ? 0 : 0.55) +
       Math.sin(wt * 0.05) * 0.45 +
       Math.sin(wt * 0.013) * 0.2;
     const targetY =
@@ -442,9 +442,9 @@ export class TetraFlock {
       }
 
       // 水槽のガラス面。上下と左右の壁を柔らかく押し返す。
-      // page では左の壁を内側（-0.1）に置いて、文字のある左側を空けておく。
-      // tank では小窓の縁が壁で、上は水面（シェーダーの waterLine の下）
-      const wallLeft = this.layout === "tank" ? -0.88 : -0.1;
+      // page では左の壁を中央より右（+0.1）に置き、文字の載る左半分には
+      // 魚を一切出さない。tank では小窓の縁が壁で、上は水面
+      const wallLeft = this.layout === "tank" ? -0.88 : 0.1;
       const wallRight = this.layout === "tank" ? 0.88 : 1.12;
       const wallTop = this.layout === "tank" ? 0.58 : 0.88;
       if (y > wallTop) fy -= (y - wallTop) * 3;
