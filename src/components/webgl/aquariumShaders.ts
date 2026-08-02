@@ -96,6 +96,29 @@ export const waterFragment = /* glsl */ `
     float vignette = 1.0 - length((vUv - vec2(0.5, 0.45)) * vec2(1.1, 1.0)) * 0.3;
     color *= vignette;
 
+    // ---- タンク表示だけ: ガラスの小さな水槽として見せる ----
+    // 水面。上に空気の層を残し、線が水平にゆるく揺れる
+    float waterLine = 0.84 + sin(uTime * 0.6 + vUv.x * uAspect * 5.0) * 0.006;
+    float airHeight = max(vUv.y - waterLine, 0.0);
+    float air = smoothstep(-0.003, 0.003, vUv.y - waterLine) * uTank;
+    // 水面より上はガラス越しの闇。水面のすぐ上にだけ薄い照り返し
+    vec3 airColor = INK * 0.85 + MINT * exp(-airHeight * 60.0) * 0.05;
+    color = mix(color, airColor, air);
+    // 水面の輝線
+    color += MINT * exp(-abs(vUv.y - waterLine) * 150.0) * 0.2 * uTank;
+    // ガラスの縁。四辺の内側がわずかに光る
+    float rim = min(
+      min(vUv.x, 1.0 - vUv.x) * uAspect,
+      min(vUv.y, 1.0 - vUv.y)
+    );
+    color += MINT * exp(-rim * 80.0) * 0.09 * uTank;
+    // 前面ガラスの映り込み。斜めの淡い筋を2本
+    float slope = vUv.x * uAspect - (1.0 - vUv.y) * 0.75;
+    float streaks =
+        exp(-pow((slope - 0.22) * 9.0, 2.0)) * 0.03
+      + exp(-pow((slope - 0.58) * 16.0, 2.0)) * 0.018;
+    color += vec3(0.75, 0.85, 0.9) * streaks * uTank;
+
     // わずかなディザ。暗部のバンディングを散らす
     float dither =
       fract(sin(dot(vUv * 1024.0 + uTime, vec2(12.9898, 78.233))) * 43758.5453);
@@ -201,8 +224,10 @@ export const moteVertex = /* glsl */ `
   void main() {
     float seed = aSeed.z;
 
-    // 昇り続け、上端まで行ったら下からループする
+    // 昇り続け、上端まで行ったら下からループする。
+    // タンク表示では水面（画面の 84%）より上へは行かず、手前で消える
     float y = fract(aSeed.y + uTime * 0.014 * (0.5 + seed * 0.9));
+    y *= mix(1.0, 0.84, uTank);
     float x = fract(
       aSeed.x + sin(uTime * 0.15 * (0.3 + seed) + seed * 11.0) * 0.014
     );

@@ -394,12 +394,17 @@ export class TetraFlock {
         fy += (cohY / neighbors - y) * 0.55;
       }
 
-      // 回遊目標へゆるく引かれる。泳層持ちは縦は泳層へ帰る
+      // 回遊目標へゆるく引かれる。泳層持ちは縦は泳層へ帰る。
+      // tank では水面（NDC 0.68）があるので、水面近くの泳層は下げる
       fx += (targetX - x) * 0.055;
       if (this.preferredY === null) {
         fy += (targetY - y) * 0.055;
       } else {
-        fy += (this.preferredY - y) * 1.1;
+        const prefY =
+          this.layout === "tank"
+            ? Math.min(this.preferredY, 0.5)
+            : this.preferredY;
+        fy += (prefY - y) * 1.1;
       }
 
       // 読む列（画面中央の帯）からの斥力。可読性のための規則。
@@ -438,10 +443,11 @@ export class TetraFlock {
 
       // 水槽のガラス面。上下と左右の壁を柔らかく押し返す。
       // page では左の壁を内側（-0.1）に置いて、文字のある左側を空けておく。
-      // tank では小窓の縁が壁
+      // tank では小窓の縁が壁で、上は水面（シェーダーの waterLine の下）
       const wallLeft = this.layout === "tank" ? -0.88 : -0.1;
       const wallRight = this.layout === "tank" ? 0.88 : 1.12;
-      if (y > 0.88) fy -= (y - 0.88) * 3;
+      const wallTop = this.layout === "tank" ? 0.58 : 0.88;
+      if (y > wallTop) fy -= (y - wallTop) * 3;
       if (y < -0.88) fy += (-0.88 - y) * 3;
       if (x < wallLeft) fx += (wallLeft - x) * 2.2;
       if (x > wallRight) fx -= (x - wallRight) * 2.2;
