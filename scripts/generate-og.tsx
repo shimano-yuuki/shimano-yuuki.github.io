@@ -11,7 +11,7 @@ import path from "node:path";
 import { ImageResponse } from "next/og";
 import { site } from "../src/lib/site";
 
-const BG = "#0b0d10";
+const BG = "#000000";
 const FG = "#f2f1e8";
 const FG_MUTED = "#b9b7ac";
 const CYAN = "#8fd8e0";

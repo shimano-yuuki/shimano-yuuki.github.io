@@ -32,8 +32,8 @@ export const waterFragment = /* glsl */ `
 
   varying vec2 vUv;
 
-  // 配色（sRGB 0-1）。INK は --color-bg、CYAN は --color-cyan と同じ値
-  const vec3 INK  = vec3(0.043, 0.051, 0.063); // #0b0d10
+  // 配色（sRGB 0-1）。INK は --color-bg（純黒）、CYAN は --color-cyan と同じ値
+  const vec3 INK  = vec3(0.0, 0.0, 0.0); // #000000
   const vec3 DEEP = vec3(0.027, 0.110, 0.173); // #071c2c
   const vec3 BLUE = vec3(0.055, 0.353, 0.471); // #0e5a78
   const vec3 MINT = vec3(0.561, 0.847, 0.878); // #8fd8e0
@@ -119,10 +119,11 @@ export const waterFragment = /* glsl */ `
       + exp(-pow((slope - 0.58) * 16.0, 2.0)) * 0.018;
     color += vec3(0.75, 0.85, 0.9) * streaks * uTank;
 
-    // わずかなディザ。暗部のバンディングを散らす
+    // わずかなディザ。暗部のバンディングを散らす。
+    // 文字の載る左（純黒）にはノイズも乗せない
     float dither =
       fract(sin(dot(vUv * 1024.0 + uTime, vec2(12.9898, 78.233))) * 43758.5453);
-    color += (dither - 0.5) * 0.012;
+    color += (dither - 0.5) * 0.012 * right;
 
     gl_FragColor = vec4(clamp(color, 0.0, 1.0), 1.0);
   }

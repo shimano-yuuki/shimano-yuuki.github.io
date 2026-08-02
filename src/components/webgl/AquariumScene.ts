@@ -219,7 +219,7 @@ export class AquariumScene {
       alpha: false,
       powerPreference: "high-performance",
     });
-    this.renderer.setClearColor(0x0b0d10, 1);
+    this.renderer.setClearColor(0x000000, 1);
     this.renderer.autoClear = false;
 
     // ---- 水 ----
