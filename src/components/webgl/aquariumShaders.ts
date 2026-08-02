@@ -27,6 +27,8 @@ export const waterFragment = /* glsl */ `
 
   uniform float uTime;
   uniform float uAspect;
+  // 1 でタンク表示（スマホの右下小窓）。水明かりが全面に回る
+  uniform float uTank;
 
   varying vec2 vUv;
 
@@ -57,13 +59,12 @@ export const waterFragment = /* glsl */ `
 
   void main() {
     // 文字は画面の左に載るので、水の明かりはすべて右へ寄せ、
-    // 左はほぼ地の黒に沈める
-    float right = smoothstep(0.25, 0.9, vUv.x);
+    // 左は地の黒そのものに沈める（にじみを残さない）。
+    // タンク表示では小窓の全体が水槽なので、全面を水にする
+    float right = max(smoothstep(0.25, 0.9, vUv.x), uTank);
 
     // 底の闇から、上へ向かうほど深い青の水明かりへ（右側だけ）
-    vec3 color = mix(
-      INK, DEEP, smoothstep(-0.15, 1.1, vUv.y) * (0.25 + right * 0.75)
-    );
+    vec3 color = mix(INK, DEEP, smoothstep(-0.15, 1.1, vUv.y) * right);
 
     // 水のむら。大きくゆっくり動く濃淡で「水の量感」を出す。
     // 混ぜすぎ注意: BLUE は明るく、上に載る小ラベルのコントラストをすぐ食う
@@ -193,6 +194,7 @@ export const moteVertex = /* glsl */ `
 
   uniform float uTime;
   uniform float uPixelRatio;
+  uniform float uTank;
 
   varying float vAlpha;
 
@@ -208,6 +210,8 @@ export const moteVertex = /* glsl */ `
     vAlpha = 0.16 + seed * 0.22;
     // 画面の縁で消えるようにして、唐突な出現を隠す
     vAlpha *= smoothstep(0.0, 0.1, y) * smoothstep(1.0, 0.88, y);
+    // ページ表示では文字の載る左（黒）には出さない。タンク表示は全面
+    vAlpha *= max(smoothstep(0.35, 0.6, x), uTank);
 
     gl_PointSize = (1.0 + seed * 1.8) * uPixelRatio;
     gl_Position = vec4(x * 2.0 - 1.0, y * 2.0 - 1.0, 0.0, 1.0);

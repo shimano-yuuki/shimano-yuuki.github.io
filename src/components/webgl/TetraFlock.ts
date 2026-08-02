@@ -53,6 +53,11 @@ export type FlockOptions = {
   shelter?: { x: number; y: number } | null;
   /** 奥行き。群れごとに少しずらすと重なりが読める */
   z?: number;
+  /**
+   * 生活圏。page は文字のある左を空けて右半分で暮らす。
+   * tank（スマホの右下小窓）は小窓の全体が水槽なので全幅を泳ぐ
+   */
+  layout?: "page" | "tank";
 };
 
 /** 泳ぐ速さ（NDC/秒）。止まると死んで見えるので下限を切らない。 */
@@ -225,6 +230,7 @@ export class TetraFlock {
   private preferredY: number | null;
   private shelter: { x: number; y: number } | null;
   private z: number;
+  private layout: "page" | "tank";
   /** 回遊目標の位相。群れごとにずらして、皆が同じ点に集まらないようにする */
   private wanderPhase = Math.random() * Math.PI * 2;
   private dummy = new THREE.Object3D();
@@ -239,6 +245,7 @@ export class TetraFlock {
     preferredY = null,
     shelter = null,
     z = 0,
+    layout = "page",
   }: FlockOptions) {
     this.count = count;
     this.bodyLength = bodyLength;
@@ -246,6 +253,7 @@ export class TetraFlock {
     this.preferredY = preferredY;
     this.shelter = shelter;
     this.z = z;
+    this.layout = layout;
 
     this.positions = new Float32Array(count * 2);
     this.velocities = new Float32Array(count * 2);
@@ -254,8 +262,11 @@ export class TetraFlock {
     this.prevHeadings = new Float32Array(count);
 
     // 群れらしく、ひとかたまりの周辺にばらまいて始める。
-    // 文字は画面の左に載るので、魚の生活圏は右半分
-    const cx = 0.3 + Math.random() * 0.6;
+    // page では文字が左に載るので生活圏は右半分、tank では全幅
+    const cx =
+      layout === "tank"
+        ? (Math.random() - 0.5) * 0.9
+        : 0.3 + Math.random() * 0.6;
     const cy =
       preferredY ?? (Math.random() > 0.5 ? 0.55 : -0.55);
     const heading = Math.random() > 0.5 ? 0 : Math.PI;
@@ -306,6 +317,11 @@ export class TetraFlock {
     this.material.uniforms.uOpacity.value = value;
   }
 
+  /** 生活圏の切り替え。壁と回遊目標が変わり、魚は自然に移り住む */
+  setLayout(layout: "page" | "tank") {
+    this.layout = layout;
+  }
+
   /**
    * 1フレームぶん進める。
    * @param pointer カーソルの NDC 座標（-1〜1）。無ければ null
@@ -322,10 +338,12 @@ export class TetraFlock {
     if (dt === 0) return;
 
     // 群れ全体が追いかける回遊目標。ゆっくり動く点で、群れが一体で曲がる理由になる。
-    // 中心を右に置き、文字のある左半分へはほとんど入らない
+    // page では中心を右に置き、文字のある左半分へはほとんど入らない
     const wt = time + this.wanderPhase * 20.0;
     const targetX =
-      0.4 + Math.sin(wt * 0.05) * 0.45 + Math.sin(wt * 0.013) * 0.2;
+      (this.layout === "tank" ? 0 : 0.4) +
+      Math.sin(wt * 0.05) * 0.45 +
+      Math.sin(wt * 0.013) * 0.2;
     const targetY =
       Math.sin(wt * 0.083 + 1.7) * 0.55 * Math.sign(Math.sin(wt * 0.011) || 1);
 
@@ -386,8 +404,9 @@ export class TetraFlock {
 
       // 読む列（画面中央の帯）からの斥力。可読性のための規則。
       // 群れが本文の真後ろを通ると一瞬コントラストが落ちるため、
-      // 帯を広めに取り、押し返しも強めにしてある
-      if (Math.abs(y) < 0.34) {
+      // 帯を広めに取り、押し返しも強めにしてある。
+      // tank では文字が上に載らないので、水槽の真ん中も自由に泳ぐ
+      if (this.layout === "page" && Math.abs(y) < 0.34) {
         fy += (y >= 0 ? 1 : -1) * (1 - Math.abs(y) / 0.34) * 0.26;
       }
 
@@ -418,11 +437,14 @@ export class TetraFlock {
       }
 
       // 水槽のガラス面。上下と左右の壁を柔らかく押し返す。
-      // 左の壁を内側（-0.1）に置いて、文字のある左側を空けておく
+      // page では左の壁を内側（-0.1）に置いて、文字のある左側を空けておく。
+      // tank では小窓の縁が壁
+      const wallLeft = this.layout === "tank" ? -0.88 : -0.1;
+      const wallRight = this.layout === "tank" ? 0.88 : 1.12;
       if (y > 0.88) fy -= (y - 0.88) * 3;
       if (y < -0.88) fy += (-0.88 - y) * 3;
-      if (x < -0.1) fx += (-0.1 - x) * 2.2;
-      if (x > 1.12) fx -= (x - 1.12) * 2.2;
+      if (x < wallLeft) fx += (wallLeft - x) * 2.2;
+      if (x > wallRight) fx -= (x - wallRight) * 2.2;
 
       v[ix] += fx * dt;
       v[ix + 1] += fy * dt;

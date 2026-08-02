@@ -7,7 +7,8 @@ import { plantFragment, plantVertex } from "./aquariumShaders";
  *
  * 奥の層（魚の後ろ）と手前の層（魚の前）の2枚に分け、
  * 手前は太く暗いシルエットにして奥行きをつくる。
- * 中央は本文が通るので、株は左右の袖に寄せて植える。
+ * ページ表示（page）では左が文字と黒なので右の袖だけに植え、
+ * タンク表示（tank。スマホの右下小窓）では左右両方に植える。
  */
 
 type PlantOptions = {
@@ -15,6 +16,8 @@ type PlantOptions = {
   backCount: number;
   /** 手前の層の本数 */
   frontCount: number;
+  /** page: 右の袖だけ / tank: 左右の袖 */
+  layout: "page" | "tank";
 };
 
 type BladeSpec = {
@@ -68,21 +71,21 @@ function makeBladeMesh(blades: BladeSpec[], renderOrder: number) {
 }
 
 /**
- * 左右どちらかの袖に寄せた根元位置。中央（本文の帯）を空ける。
- * 文字は左に載るので、株は右の袖に多めに植える。
+ * 袖に寄せた根元位置。中央（本文の帯）を空ける。
+ * page では左は完全な黒に保つため、株は右の袖だけに植える。
  */
-function sideRoot(minOffset: number, spread: number) {
-  const side = Math.random() < 0.35 ? -1 : 1;
+function sideRoot(minOffset: number, spread: number, layout: "page" | "tank") {
+  const side = layout === "tank" && Math.random() < 0.5 ? -1 : 1;
   return side * (minOffset + Math.pow(Math.random(), 0.8) * spread);
 }
 
 export class PlantLayer {
   readonly meshes: THREE.Mesh[];
 
-  constructor({ backCount, frontCount }: PlantOptions) {
+  constructor({ backCount, frontCount, layout }: PlantOptions) {
     const back: BladeSpec[] = [];
     for (let i = 0; i < backCount; i += 1) {
-      const rootX = sideRoot(0.14, 0.92);
+      const rootX = sideRoot(0.14, 0.92, layout);
       back.push({
         rootX,
         // 袖に近いほど丈を高く。中央寄りの株は短く沈める。
@@ -100,7 +103,7 @@ export class PlantLayer {
 
     const front: BladeSpec[] = [];
     for (let i = 0; i < frontCount; i += 1) {
-      const rootX = sideRoot(0.5, 0.6);
+      const rootX = sideRoot(0.5, 0.6, layout);
       front.push({
         rootX,
         height: 0.4 + Math.random() * 0.28,

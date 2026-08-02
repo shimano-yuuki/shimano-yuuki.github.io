@@ -4,12 +4,17 @@ import { useEffect, useRef } from "react";
 import type { AquariumScene } from "./AquariumScene";
 
 /**
- * 全ページ共通の背景。固定のキャンバス1枚に水槽を描き、内容はこの上に載る。
+ * 全ページ共通の水槽。固定のキャンバス1枚に描く。
  *
- * - WebGL が使えない環境では何も描かず、body の bg-bg がそのまま見える
+ * - md（48rem）以上: 全画面の背景。水は右、文字の載る左は黒
+ * - md 未満（スマホ）: 右下に固定の小さな水槽（tank）。背景は黒のまま
+ * - WebGL が使えない環境では何も描かず、地の黒がそのまま見える
  * - prefers-reduced-motion では静止した1フレームだけ描く
  * - タブが隠れている間は計算を止める
  */
+
+/** Tailwind の md 境界（48rem）未満。ここでタンク表示に切り替わる */
+const NARROW_QUERY = "(max-width: 47.99rem)";
 export function AquariumBackground() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -36,11 +41,13 @@ export function AquariumBackground() {
 
       const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
       const coarse = window.matchMedia("(pointer: coarse)").matches;
+      const narrow = window.matchMedia(NARROW_QUERY);
 
       try {
         scene = new AquariumScene({
           canvas,
           quality: coarse ? "low" : "high",
+          layout: narrow.matches ? "tank" : "page",
         });
       } catch {
         return; // WebGL 不可。静的な背景色のままにする
@@ -48,14 +55,22 @@ export function AquariumBackground() {
       const aquarium = scene;
 
       const resize = () => {
-        // URL バーの伸縮で発火する高さ変化は無視したいので clientHeight を使う
-        aquarium.resize(
-          document.documentElement.clientWidth,
-          document.documentElement.clientHeight,
-        );
+        // キャンバスの大きさは CSS が決める（md 未満は右下の小窓、以上は全画面）
+        aquarium.resize(canvas.clientWidth, canvas.clientHeight);
       };
       resize();
       listen("resize", resize);
+
+      // 画面幅が md 境界をまたいだら、背景 ⇔ 右下タンクを切り替える
+      const applyLayout = () => {
+        aquarium.setLayout(narrow.matches ? "tank" : "page");
+        resize();
+        if (reduced.matches) aquarium.renderStill();
+      };
+      narrow.addEventListener("change", applyLayout);
+      cleanups.push(() =>
+        narrow.removeEventListener("change", applyLayout),
+      );
 
       const applyMotionPreference = () => {
         if (reduced.matches) {
@@ -74,13 +89,12 @@ export function AquariumBackground() {
       listen(
         "pointermove",
         (event) => {
-          const width = document.documentElement.clientWidth;
-          const height = document.documentElement.clientHeight;
-          if (width === 0 || height === 0) return;
-          // 魚の座標系（NDC -1〜1、上が +y）へ
+          // 魚の座標系（NDC -1〜1、上が +y）へ。タンク表示では小窓が基準
+          const rect = canvas.getBoundingClientRect();
+          if (rect.width === 0 || rect.height === 0) return;
           aquarium.setPointer(
-            (event.clientX / width) * 2 - 1,
-            1 - (event.clientY / height) * 2,
+            ((event.clientX - rect.left) / rect.width) * 2 - 1,
+            1 - ((event.clientY - rect.top) / rect.height) * 2,
           );
         },
         { passive: true },
@@ -108,7 +122,7 @@ export function AquariumBackground() {
     <canvas
       ref={canvasRef}
       aria-hidden="true"
-      className="fixed inset-0 -z-10 h-full w-full"
+      className="fixed -z-10 max-md:right-3 max-md:bottom-3 max-md:h-[min(48vw,14rem)] max-md:w-[min(72vw,21rem)] max-md:rounded-xs max-md:border max-md:border-line md:inset-0 md:h-full md:w-full"
     />
   );
 }

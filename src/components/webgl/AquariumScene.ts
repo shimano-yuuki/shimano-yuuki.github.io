@@ -34,7 +34,7 @@ const SPECIES: FlockOptions[] = [
       stripe: color(0.3, 0.7, 0.85),
       belly: color(0.58, 0.12, 0.1),
     },
-    bodyLength: 0.055,
+    bodyLength: 0.047,
     shelter: SHELTER,
     z: 0,
   },
@@ -48,7 +48,7 @@ const SPECIES: FlockOptions[] = [
       nose: color(0.66, 0.1, 0.07),
       noseAmount: 1,
     },
-    bodyLength: 0.057,
+    bodyLength: 0.048,
     z: -0.15,
   },
   // エンバーテトラ。琥珀の小さな群れ
@@ -59,7 +59,7 @@ const SPECIES: FlockOptions[] = [
       stripe: color(0.82, 0.56, 0.28),
       belly: color(0.6, 0.28, 0.11),
     },
-    bodyLength: 0.042,
+    bodyLength: 0.036,
     shelter: SHELTER,
     z: 0.1,
   },
@@ -71,7 +71,7 @@ const SPECIES: FlockOptions[] = [
       stripe: color(0.75, 0.8, 0.75),
       belly: color(0.12, 0.13, 0.13),
     },
-    bodyLength: 0.052,
+    bodyLength: 0.044,
     z: -0.25,
   },
   // グローライトテトラ。半透明の体に橙の輝線
@@ -82,7 +82,7 @@ const SPECIES: FlockOptions[] = [
       stripe: color(0.9, 0.42, 0.12),
       belly: color(0.3, 0.3, 0.28),
     },
-    bodyLength: 0.048,
+    bodyLength: 0.041,
     shelter: SHELTER,
     z: 0.2,
   },
@@ -96,7 +96,7 @@ const SPECIES: FlockOptions[] = [
       bars: 0.85,
     },
     body: { depth: 1.35 },
-    bodyLength: 0.06,
+    bodyLength: 0.051,
     speed: 1.1,
     z: -0.1,
   },
@@ -109,7 +109,7 @@ const SPECIES: FlockOptions[] = [
       belly: color(0.64, 0.44, 0.17),
     },
     body: { depth: 1.5, finHeight: 1.35 },
-    bodyLength: 0.078,
+    bodyLength: 0.066,
     speed: 0.65,
     z: 0.25,
   },
@@ -123,7 +123,7 @@ const SPECIES: FlockOptions[] = [
       bars: 0.9,
     },
     body: { depth: 2.3, finHeight: 1.45, tail: 0.8 },
-    bodyLength: 0.125,
+    bodyLength: 0.106,
     speed: 0.42,
     z: 0.35,
   },
@@ -136,7 +136,7 @@ const SPECIES: FlockOptions[] = [
       belly: color(0.33, 0.29, 0.22),
     },
     body: { depth: 1.25 },
-    bodyLength: 0.05,
+    bodyLength: 0.042,
     speed: 0.55,
     preferredY: -0.8,
     shelter: SHELTER,
@@ -151,16 +151,23 @@ const SPECIES: FlockOptions[] = [
       belly: color(0.4, 0.42, 0.44),
     },
     body: { depth: 1.2, keel: 3.2 },
-    bodyLength: 0.058,
+    bodyLength: 0.049,
     speed: 0.8,
     preferredY: 0.74,
     z: -0.3,
   },
 ];
 
+/**
+ * page: 全画面の背景。水明かりは右に寄せ、文字の載る左は黒のまま。
+ * tank: スマホで右下に置く小さな水槽。小窓の全体が水になり、魚は全幅を泳ぐ。
+ */
+export type AquariumLayout = "page" | "tank";
+
 export type AquariumOptions = {
   canvas: HTMLCanvasElement;
   quality?: Quality;
+  layout?: AquariumLayout;
 };
 
 /**
@@ -169,7 +176,7 @@ export type AquariumOptions = {
  * 層は奥から、水（グラデーション＋光条＋カースティクス）→ 奥の水草 →
  * 熱帯魚 10 種 → 手前の水草 → 昇る気泡。
  * 文字はこの上に DOM として重なるため、水の明るさはシェーダー側で抑え、
- * 魚は画面中央の帯（読む列）を避けて泳ぐ。
+ * 魚は画面中央の帯（読む列）を避けて泳ぐ（page のとき）。
  */
 export class AquariumScene {
   private renderer: THREE.WebGLRenderer;
@@ -190,6 +197,7 @@ export class AquariumScene {
   private moteMaterial: THREE.ShaderMaterial;
 
   private settings: (typeof SETTINGS)[Quality];
+  private layout: AquariumLayout;
   private aspect = 1;
   private elapsed = 0;
   private lastTime = 0;
@@ -201,8 +209,9 @@ export class AquariumScene {
   /** カーソル（NDC -1〜1）。しばらく動かなければ魚は忘れる */
   private pointer = { x: 0, y: 0, active: false, movedAt: -10 };
 
-  constructor({ canvas, quality = "high" }: AquariumOptions) {
+  constructor({ canvas, quality = "high", layout = "page" }: AquariumOptions) {
     this.settings = SETTINGS[quality];
+    this.layout = layout;
 
     this.renderer = new THREE.WebGLRenderer({
       canvas,
@@ -220,6 +229,7 @@ export class AquariumScene {
       uniforms: {
         uTime: { value: 0 },
         uAspect: { value: 1 },
+        uTank: { value: layout === "tank" ? 1 : 0 },
       },
       depthTest: false,
       depthWrite: false,
@@ -232,6 +242,7 @@ export class AquariumScene {
     this.plants = new PlantLayer({
       backCount: this.settings.plantsBack,
       frontCount: this.settings.plantsFront,
+      layout,
     });
     for (const mesh of this.plants.meshes) this.worldScene.add(mesh);
 
@@ -240,6 +251,7 @@ export class AquariumScene {
       (species) =>
         new TetraFlock({
           ...species,
+          layout,
           count: Math.max(2, Math.round(species.count * this.settings.fishScale)),
         }),
     );
@@ -274,6 +286,7 @@ export class AquariumScene {
         uTime: { value: 0 },
         uPixelRatio: { value: 1 },
         uOpacity: { value: 0 },
+        uTank: { value: layout === "tank" ? 1 : 0 },
       },
       transparent: true,
       depthTest: false,
@@ -301,6 +314,31 @@ export class AquariumScene {
     this.plants.setAspect(this.aspect);
     this.rocks.setAspect(this.aspect);
     this.moteMaterial.uniforms.uPixelRatio.value = dpr;
+  }
+
+  /**
+   * page ⇔ tank の切り替え（画面幅の境界をまたいだとき）。
+   * 水と気泡はフラグひとつ、魚は壁と回遊目標の変更で自然に移り住む。
+   * 水草だけは根元の位置が属性に焼き込みなので植え直す。
+   */
+  setLayout(layout: AquariumLayout) {
+    if (this.layout === layout) return;
+    this.layout = layout;
+
+    const tank = layout === "tank" ? 1 : 0;
+    this.waterMaterial.uniforms.uTank.value = tank;
+    this.moteMaterial.uniforms.uTank.value = tank;
+    for (const flock of this.flocks) flock.setLayout(layout);
+
+    for (const mesh of this.plants.meshes) this.worldScene.remove(mesh);
+    this.plants.dispose();
+    this.plants = new PlantLayer({
+      backCount: this.settings.plantsBack,
+      frontCount: this.settings.plantsFront,
+      layout,
+    });
+    for (const mesh of this.plants.meshes) this.worldScene.add(mesh);
+    this.plants.setAspect(this.aspect);
   }
 
   setPointer(x: number, y: number) {
