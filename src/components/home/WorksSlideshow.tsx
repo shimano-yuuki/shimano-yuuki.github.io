@@ -143,7 +143,7 @@ export function WorksSlideshow({ works }: { works: SlideWork[] }) {
   return (
     <section aria-label="作品スライドショー">
       <div
-        className="relative h-[62svh] min-h-[20rem] w-full overflow-hidden"
+        className="relative h-[56svh] min-h-[20rem] w-full overflow-hidden"
         onPointerEnter={() => setPaused(true)}
         onPointerLeave={() => setPaused(false)}
         onFocus={() => setPaused(true)}

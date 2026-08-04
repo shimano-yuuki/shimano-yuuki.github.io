@@ -3,18 +3,18 @@ import { JournalList } from "@/components/home/JournalList";
 import { WorksSlideshow } from "@/components/home/WorksSlideshow";
 import { WorksTable } from "@/components/home/WorksTable";
 import { getRecentPosts, getWorks } from "@/lib/content";
-import { site } from "@/lib/site";
 
 export default function Home() {
   const works = getWorks();
 
   return (
     <>
-      <h1 className="sr-only">
-        {site.fullName} — {site.role}
-      </h1>
+      {/* 最上段は名前と自己紹介のヘッダー。h1 はこの中にある */}
+      <div className="measure">
+        <Hero />
+      </div>
 
-      {/* 主役。作品が数秒ごとに移り変わり、押すと詳細へ */}
+      {/* その下に作品のスライドショー。数秒ごとに移り変わり、押すと詳細へ */}
       <WorksSlideshow
         works={works.map((work) => ({
           slug: work.slug,
@@ -24,10 +24,6 @@ export default function Home() {
           year: work.date.slice(0, 4),
         }))}
       />
-
-      <div className="measure">
-        <Hero />
-      </div>
 
       <WorksTable works={works} />
       <JournalList posts={getRecentPosts(5)} />
