@@ -1,33 +1,36 @@
 import { FadeIn } from "@/components/FadeIn";
 import { site } from "@/lib/site";
+import { HeroBackdrop } from "./HeroBackdrop";
 import { StatusLine } from "./StatusLine";
 
 /**
- * トップ最上段のヘッダー。名前・肩書き・短い自己紹介・ステータス行だけで組む。
- * 飾りは書体と余白のみ（DESIGN.md — 巨大タイポや罫の飾りは使わない）。
+ * トップ最上段のヘッダー。シアンの光の背景画の上に、
+ * 名前（h1）・肩書き・短い自己紹介・ステータス行を載せる。
+ * 文字の載る左と下は背景画の側で黒に落としてある（slideArt.drawHeaderArt）。
  * 作品のスライドショーはこの直下に続く。
  */
 export function Hero() {
   return (
-    <FadeIn
-      as="header"
-      className="flex flex-col justify-between gap-10 pt-14 pb-14 sm:flex-row sm:items-end sm:pt-20 sm:pb-16"
-    >
-      <div>
-        <h1 className="display text-3xl sm:text-5xl">
-          {site.fullName.toUpperCase()}
-        </h1>
-        <p className="label mt-3 text-fg-faint">
-          {site.nameJa} — {site.role}
-        </p>
-        <p className="mt-7 max-w-md text-sm leading-relaxed text-fg/90">
-          ふだんは業務でモバイルアプリをつくっています。
-          <br />
-          ここには個人でつくったものと、つくる途中で考えたことを置いています。
-        </p>
-      </div>
+    <section className="relative overflow-hidden">
+      <HeroBackdrop />
 
-      <StatusLine />
-    </FadeIn>
+      <div className="measure relative flex min-h-[46svh] flex-col justify-end gap-10 pt-16 pb-12 sm:flex-row sm:items-end sm:justify-between sm:pb-14">
+        <FadeIn>
+          <h1 className="display text-4xl sm:text-6xl">
+            {site.fullName.toUpperCase()}
+          </h1>
+          <p className="label mt-4 text-fg-muted">
+            {site.nameJa} — {site.role}
+          </p>
+          <p className="mt-7 max-w-md text-sm leading-relaxed text-fg/90">
+            ふだんは業務でモバイルアプリをつくっています。
+            <br />
+            ここには個人でつくったものと、つくる途中で考えたことを置いています。
+          </p>
+        </FadeIn>
+
+        <StatusLine />
+      </div>
+    </section>
   );
 }

@@ -9,10 +9,8 @@ export default function Home() {
 
   return (
     <>
-      {/* 最上段は名前と自己紹介のヘッダー。h1 はこの中にある */}
-      <div className="measure">
-        <Hero />
-      </div>
+      {/* 最上段は背景画つきのヘッダー。h1 はこの中にある */}
+      <Hero />
 
       {/* その下に作品のスライドショー。数秒ごとに移り変わり、押すと詳細へ */}
       <WorksSlideshow

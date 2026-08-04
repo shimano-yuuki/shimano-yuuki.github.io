@@ -58,12 +58,17 @@ export function WorksSlideshow({ works }: { works: SlideWork[] }) {
     const reducedQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
     setReduced(reducedQuery.matches);
 
+    // サンプル画には作品名を描き込むので、書体が揃ってから描く
+    const fontsReady: Promise<unknown> = document.fonts?.ready ?? Promise.resolve();
+    const placeholder = (work: SlideWork) =>
+      createPlaceholderArt(work.slug, work.title, work.subtitle);
+
     Promise.all([
       import("./SlideshowScene"),
       ...works.map((work) =>
         work.cover
-          ? loadImage(work.cover).catch(() => createPlaceholderArt(work.slug))
-          : Promise.resolve(createPlaceholderArt(work.slug)),
+          ? loadImage(work.cover).catch(() => placeholder(work))
+          : fontsReady.then(() => placeholder(work)),
       ),
     ]).then(([{ SlideshowScene }, ...images]) => {
       if (disposed) return;
