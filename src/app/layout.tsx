@@ -3,7 +3,6 @@ import { fontVariables } from "./fonts";
 import "./globals.css";
 import { Footer } from "@/components/layout/Footer";
 import { Header } from "@/components/layout/Header";
-import { AquariumBackground } from "@/components/webgl/AquariumBackground";
 import { site } from "@/lib/site";
 
 export const metadata: Metadata = {
@@ -34,8 +33,6 @@ export default function RootLayout({
   return (
     <html lang="ja" className={`${fontVariables} h-full antialiased`}>
       <body className="flex min-h-full flex-col text-fg">
-        {/* 背景の水槽。WebGL 不可なら bg-bg のまま */}
-        <AquariumBackground />
         <a
           href="#main"
           className="label sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:bg-fg focus:px-4 focus:py-2 focus:text-bg"

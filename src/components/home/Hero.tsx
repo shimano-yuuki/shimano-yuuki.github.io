@@ -1,19 +1,19 @@
 import { StatusLine } from "./StatusLine";
 
 /**
- * ヒーロー。色面は敷かず、最初の1画面は背景の水槽をそのまま見せる。
- * 文字はステータス行と自己紹介の2つだけ。水槽が主役、文字は添え物。
+ * スライドショーの下に置く短い自己紹介。主役は上の作品で、文字は添え物。
+ * 文字はこの2〜3行とステータス行だけ。
  */
 export function Hero() {
   return (
-    <div className="flex min-h-[62svh] flex-col justify-between pt-6 pb-10 sm:pt-10">
-      <StatusLine />
-
+    <div className="flex flex-col justify-between gap-10 pt-20 sm:flex-row sm:items-end sm:pt-24">
       <p className="max-w-md text-sm leading-relaxed text-fg/90">
-        アプリと Web をつくっています。
+        ふだんは業務でモバイルアプリをつくっています。
         <br />
-        つくったものと、つくる途中で考えたことを置いています。
+        ここには個人でつくったものと、つくる途中で考えたことを置いています。
       </p>
+
+      <StatusLine />
     </div>
   );
 }
