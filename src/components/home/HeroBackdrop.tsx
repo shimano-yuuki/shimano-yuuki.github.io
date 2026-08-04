@@ -1,11 +1,16 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import type { HeaderScene } from "./HeaderScene";
 import { drawHeaderArt } from "./slideArt";
 
 /**
- * ヘッダーの背景画。静的な一枚絵を canvas に一度だけ描く
- * （動かないので reduced-motion でもそのまま）。リサイズ時は描き直す。
+ * ヘッダーの背景。three.js のシェーダー（HeaderScene）で光の流れを描く。
+ *
+ * - ポインタにはわずかな視差だけで応える
+ * - prefers-reduced-motion: 静止した1フレームだけ描く
+ * - WebGL 不可: canvas 2D の静止画（slideArt.drawHeaderArt）に落とす
+ * - タブが隠れている間は計算を止める
  */
 export function HeroBackdrop() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -14,16 +19,76 @@ export function HeroBackdrop() {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const draw = () => {
-      const width = canvas.clientWidth;
-      const height = canvas.clientHeight;
-      if (width === 0 || height === 0) return;
+    let scene: HeaderScene | null = null;
+    let disposed = false;
+    const cleanups: (() => void)[] = [];
+
+    // WebGL 不可のときの静止画
+    const drawFallback = () => {
       const ratio = Math.min(window.devicePixelRatio, 2);
-      drawHeaderArt(canvas, width * ratio, height * ratio);
+      drawHeaderArt(
+        canvas,
+        canvas.clientWidth * ratio,
+        canvas.clientHeight * ratio,
+      );
     };
-    draw();
-    window.addEventListener("resize", draw);
-    return () => window.removeEventListener("resize", draw);
+
+    // three（数百KB）は初期表示のクリティカルパスから外す
+    import("./HeaderScene").then(({ HeaderScene }) => {
+      if (disposed) return;
+
+      const reducedQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+
+      try {
+        scene = new HeaderScene({ canvas, reduced: reducedQuery.matches });
+      } catch {
+        drawFallback();
+        window.addEventListener("resize", drawFallback);
+        cleanups.push(() => window.removeEventListener("resize", drawFallback));
+        return;
+      }
+      const header = scene;
+
+      const resize = () => header.resize(canvas.clientWidth, canvas.clientHeight);
+      resize();
+      window.addEventListener("resize", resize);
+      cleanups.push(() => window.removeEventListener("resize", resize));
+
+      if (reducedQuery.matches) header.renderStill();
+      else header.start();
+
+      const applyMotionPreference = () =>
+        header.setReduced(reducedQuery.matches);
+      reducedQuery.addEventListener("change", applyMotionPreference);
+      cleanups.push(() =>
+        reducedQuery.removeEventListener("change", applyMotionPreference),
+      );
+
+      const onPointerMove = (event: PointerEvent) => {
+        header.setPointer(
+          (event.clientX / window.innerWidth) * 2 - 1,
+          1 - (event.clientY / window.innerHeight) * 2,
+        );
+      };
+      window.addEventListener("pointermove", onPointerMove, { passive: true });
+      cleanups.push(() => window.removeEventListener("pointermove", onPointerMove));
+
+      const onVisibility = () => {
+        if (reducedQuery.matches) return;
+        if (document.hidden) header.stop();
+        else header.start();
+      };
+      document.addEventListener("visibilitychange", onVisibility);
+      cleanups.push(() =>
+        document.removeEventListener("visibilitychange", onVisibility),
+      );
+    });
+
+    return () => {
+      disposed = true;
+      for (const cleanup of cleanups) cleanup();
+      scene?.dispose();
+    };
   }, []);
 
   return (
