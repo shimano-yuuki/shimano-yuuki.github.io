@@ -14,7 +14,8 @@ export function Hero() {
     <section className="relative overflow-hidden">
       <HeroBackdrop />
 
-      <div className="measure relative flex min-h-[46svh] flex-col justify-end gap-10 pt-16 pb-12 sm:flex-row sm:items-end sm:justify-between sm:pb-14">
+      {/* ナビ（約4.5rem）と合わせて、初期表示でちょうど1画面になる高さ */}
+      <div className="measure relative flex min-h-[calc(100svh-4.5rem)] flex-col justify-end gap-10 pt-16 pb-12 sm:flex-row sm:items-end sm:justify-between sm:pb-14">
         <FadeIn>
           <h1 className="display text-4xl sm:text-6xl">
             {site.fullName.toUpperCase()}

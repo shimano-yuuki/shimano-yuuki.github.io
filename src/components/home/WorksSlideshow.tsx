@@ -26,7 +26,7 @@ export type SlideWork = {
   year: string;
 };
 
-const ADVANCE_MS = 6000;
+const ADVANCE_MS = 4000;
 
 /** cover の実画像を読む。失敗したらプレースホルダーに落とす */
 function loadImage(src: string): Promise<HTMLImageElement> {
