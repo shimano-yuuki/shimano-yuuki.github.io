@@ -96,10 +96,11 @@ const fragmentShader = /* glsl */ `
     float star = smoothstep(0.14, 0.0, length(gv)) * step(0.9965, h) * twinkle;
     color += cyan * star * 0.5 * exp(-d * d * 0.9);
 
-    // 文字の載る左と下を黒へ落とす（可読性は実測で確認）
+    // 文字の載る左と下、ナビの載る最上部を黒へ落とす（可読性は実測で確認）
     float leftFade = smoothstep(0.02, 0.62, uv.x);
     float bottomFade = smoothstep(0.0, 0.55, uv.y);
-    color *= leftFade * mix(0.1, 1.0, bottomFade);
+    float topFade = 1.0 - smoothstep(0.84, 1.0, uv.y);
+    color *= leftFade * mix(0.1, 1.0, bottomFade) * mix(0.12, 1.0, topFade);
 
     // 粒状感。バンディングを散らす
     color += (hash(uv * vec2(917.0, 533.0)) - 0.5) * 0.02;

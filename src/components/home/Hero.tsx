@@ -11,11 +11,12 @@ import { StatusLine } from "./StatusLine";
  */
 export function Hero() {
   return (
-    <section className="relative overflow-hidden">
+    // ナビの下へ潜り込ませて、初期表示は光が画面を覆い尽くす。
+    // ナビ側は relative z-10 で光の上に重なる（layout/Header.tsx）
+    <section className="relative -mt-18 overflow-hidden">
       <HeroBackdrop />
 
-      {/* ナビ（約4.5rem）と合わせて、初期表示でちょうど1画面になる高さ */}
-      <div className="measure relative flex min-h-[calc(100svh-4.5rem)] flex-col justify-end gap-10 pt-16 pb-12 sm:flex-row sm:items-end sm:justify-between sm:pb-14">
+      <div className="measure relative flex min-h-[100svh] flex-col justify-end gap-10 pt-24 pb-12 sm:flex-row sm:items-end sm:justify-between sm:pb-14">
         <FadeIn>
           <h1 className="display text-4xl sm:text-6xl">
             {site.fullName.toUpperCase()}

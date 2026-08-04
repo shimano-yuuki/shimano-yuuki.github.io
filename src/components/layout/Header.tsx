@@ -7,7 +7,8 @@ import { site } from "@/lib/site";
  */
 export function Header() {
   return (
-    <header className="measure flex items-baseline justify-between gap-6 pt-6 pb-4">
+    // relative z-10: トップではヘッダーの光の canvas の上に重なる
+    <header className="measure relative z-10 flex items-baseline justify-between gap-6 pt-6 pb-4">
       <Link href="/" className="display text-base tracking-wide sm:text-lg">
         {site.fullName.toUpperCase()}
       </Link>

@@ -82,7 +82,7 @@ const fragmentShader = /* glsl */ `
   }
 `;
 
-const TRANSITION_MS = 1300;
+const TRANSITION_MS = 2200;
 
 function easeInOutCubic(t: number): number {
   return t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2;
