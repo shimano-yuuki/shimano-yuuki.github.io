@@ -58,7 +58,7 @@ const fragmentShader = /* glsl */ `
   void main() {
     vec2 uv = vUv;
     vec2 p = vec2(uv.x * uAspect, uv.y);
-    float t = uTime * 0.045;
+    float t = uTime * 0.07;
 
     // 二段のドメインワープ。絹のような流れをつくる
     vec2 q = vec2(
@@ -74,18 +74,21 @@ const fragmentShader = /* glsl */ `
     // 青の中心は右上
     vec2 blueC = vec2(0.76 * uAspect, 0.72);
     float d = distance(p, blueC);
-    float blueMask = exp(-d * d * 2.0);
+    float blueMask = exp(-d * d * 1.7);
 
-    // 配色: 白 → 淡い青 → 空色 → 青。黒文字が 7:1 を保てる濃さが上限
+    // 配色: 白 → 淡い青 → 空色 → 青 → 濃い芯。
+    // 濃い芯は右上の帯だけで、文字の通り道（左・下）は白のまま
     vec3 white = vec3(1.0);
-    vec3 pale = vec3(0.906, 0.937, 0.976);
-    vec3 sky = vec3(0.718, 0.827, 0.937);
-    vec3 blue = vec3(0.431, 0.651, 0.863);
+    vec3 pale = vec3(0.859, 0.910, 0.969);
+    vec3 sky = vec3(0.616, 0.769, 0.918);
+    vec3 blue = vec3(0.357, 0.608, 0.847);
+    vec3 deep = vec3(0.239, 0.494, 0.761);
 
-    vec3 color = mix(white, pale, clamp(f * f * 2.0, 0.0, 1.0));
-    color = mix(color, sky, smoothstep(0.35, 0.8, f) * blueMask);
-    color = mix(color, blue, smoothstep(0.55, 0.95, f) * blueMask * 0.85);
-    color = mix(color, sky, blueMask * 0.3);
+    vec3 color = mix(white, pale, clamp(f * f * 2.2, 0.0, 1.0));
+    color = mix(color, sky, smoothstep(0.3, 0.75, f) * blueMask);
+    color = mix(color, blue, smoothstep(0.5, 0.9, f) * blueMask);
+    color = mix(color, deep, smoothstep(0.68, 0.98, f) * blueMask * 0.7);
+    color = mix(color, sky, blueMask * 0.35);
 
     // 青の周りの小さな粒。ゆっくり明滅する
     vec2 cell = floor(p * 90.0);
@@ -93,7 +96,7 @@ const fragmentShader = /* glsl */ `
     float h = hash(cell);
     float twinkle = 0.7 + 0.3 * sin(uTime * (0.4 + h) + h * 6.28);
     float star = smoothstep(0.14, 0.0, length(gv)) * step(0.9965, h) * twinkle;
-    color = mix(color, blue, star * 0.6 * exp(-d * d * 0.9));
+    color = mix(color, deep, star * 0.7 * exp(-d * d * 0.9));
 
     // 文字の多い左・下・最上部（ナビ）は白へ戻す（可読性は実測で確認）
     float leftFade = smoothstep(0.02, 0.62, uv.x);

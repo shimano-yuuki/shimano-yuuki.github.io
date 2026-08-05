@@ -46,7 +46,7 @@ const fragmentShader = /* glsl */ `
     );
   }
 
-  // 画像を contain ではめる。枠の外は誌面と同じ白
+  // 画像を contain ではめる。枠の外は透明（後ろの青い流れが見える）
   vec4 pick(sampler2D tex, float imageAspect, vec2 uv, vec2 offset) {
     float r = uCanvasAspect / imageAspect;
     vec2 st = uv;
@@ -54,7 +54,7 @@ const fragmentShader = /* glsl */ `
     else st.y = 0.5 + (uv.y - 0.5) / r;
     st += offset;
     float inside = step(0.0, st.x) * step(st.x, 1.0) * step(0.0, st.y) * step(st.y, 1.0);
-    return mix(vec4(1.0), texture2D(tex, st), inside);
+    return texture2D(tex, st) * inside;
   }
 
   void main() {
@@ -68,11 +68,12 @@ const fragmentShader = /* glsl */ `
     vec4 from = pick(uFrom, uAspectFrom, vUv, direction * 0.10 * wave * p);
     vec4 to = pick(uTo, uAspectTo, vUv, -direction * 0.10 * wave * (1.0 - p));
 
-    // 縁がノイズでにじむクロスフェード
+    // 縁がノイズでにじむクロスフェード。
+    // 枠の外はアルファ 0（premultiplied なので rgb も 0 のまま混ぜる）
     float m = clamp(p + (n - 0.5) * 0.35 * wave, 0.0, 1.0);
     m = smoothstep(0.0, 1.0, m);
 
-    gl_FragColor = vec4(mix(from.rgb, to.rgb, m), 1.0);
+    gl_FragColor = mix(from, to, m);
   }
 `;
 
@@ -109,12 +110,15 @@ export class SlideshowScene {
   constructor({ canvas, images, reduced }: SlideshowSceneOptions) {
     this.reduced = reduced;
 
+    // alpha: 枠の外を透明にして、後ろの固定背景（青い流れ）を見せる
     this.renderer = new THREE.WebGLRenderer({
       canvas,
       antialias: false,
-      alpha: false,
+      alpha: true,
+      premultipliedAlpha: true,
       powerPreference: "low-power",
     });
+    this.renderer.setClearColor(0x000000, 0);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
     this.textures = images.map((image) => {
@@ -138,6 +142,7 @@ export class SlideshowScene {
         uAspectFrom: { value: this.aspects[0] },
         uAspectTo: { value: this.aspects[0] },
       },
+      transparent: true,
       depthTest: false,
       depthWrite: false,
     });

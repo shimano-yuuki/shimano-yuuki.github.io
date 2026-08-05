@@ -353,9 +353,9 @@ export function drawHeaderArt(
 
   const random = createRandom(hashSlug("header"));
   const spots = [
-    { x: width * 0.76, y: height * 0.26, r: width * 0.4, color: "#6ea6dc", alpha: 0.75 },
-    { x: width * 0.6, y: height * 0.45, r: width * 0.28, color: "#b7d3ef", alpha: 0.8 },
-    { x: width * 0.9, y: height * 0.6, r: width * 0.22, color: "#8cbbe6", alpha: 0.5 },
+    { x: width * 0.76, y: height * 0.26, r: width * 0.4, color: "#5b9bd8", alpha: 0.85 },
+    { x: width * 0.6, y: height * 0.45, r: width * 0.28, color: "#9dc4ea", alpha: 0.85 },
+    { x: width * 0.9, y: height * 0.6, r: width * 0.22, color: "#3d7ec2", alpha: 0.5 },
   ];
   for (const spot of spots) {
     const g = ctx.createRadialGradient(spot.x, spot.y, 0, spot.x, spot.y, spot.r);

@@ -163,10 +163,13 @@ export function WorksSlideshow({ works }: { works: SlideWork[] }) {
             aria-label={`${current.title} の詳細へ`}
             className="group absolute inset-0 block"
           >
-            {/* WebGL 不可のときに見える地。作品と同じ配色 */}
+            {/* WebGL 不可のときに見える地。作品と同じ配色。
+                稼働後は隠す（枠の外は透明で、後ろの青い流れが見えるため） */}
             <div
               aria-hidden="true"
-              className="absolute inset-0 transition-[background] duration-700"
+              className={`absolute inset-0 transition-[background,opacity] duration-700 ${
+                webglReady ? "opacity-0" : "opacity-100"
+              }`}
               style={{ background: fallbackGradient(current.slug) }}
             />
             <canvas
