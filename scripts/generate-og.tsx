@@ -11,10 +11,10 @@ import path from "node:path";
 import { ImageResponse } from "next/og";
 import { site } from "../src/lib/site";
 
-const BG = "#000000";
-const FG = "#f2f1e8";
-const FG_MUTED = "#b9b7ac";
-const CYAN = "#8fd8e0";
+const BG = "#ffffff";
+const FG = "#10151d";
+const FG_MUTED = "#333c47";
+const BLUE = "#1e40af";
 
 const SIZE = { width: 1200, height: 630 };
 
@@ -71,12 +71,12 @@ function Plate() {
         </div>
       </div>
 
-      {/* 右: 深海の色面。等深線の楕円を重ねる */}
+      {/* 右: 青い流れの色面。同心の楕円を重ねる */}
       <div
         style={{
           width: 420,
           borderRadius: 10,
-          background: "linear-gradient(180deg, #0e5a78 0%, #071c2c 100%)",
+          background: "linear-gradient(180deg, #b7d3ef 0%, #6ea6dc 100%)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -91,7 +91,7 @@ function Plate() {
               position: "absolute",
               width: size,
               height: size * 0.62,
-              border: "1.5px solid " + CYAN,
+              border: "1.5px solid " + BLUE,
               opacity: 0.4,
               borderRadius: "50%",
               transform: "translate(" + index * 8 + "px, " + index * 5 + "px)",
