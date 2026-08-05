@@ -181,7 +181,7 @@ export function WorksSlideshow({ works }: { works: SlideWork[] }) {
           <span className="label text-fg-faint">
             {pad(active)} / {total}
           </span>
-          <span className="display text-xl transition-colors group-hover:text-cyan sm:text-2xl">
+          <span className="display text-xl transition-colors group-hover:text-accent sm:text-2xl">
             {current.title}
           </span>
           {current.subtitle ? (
@@ -200,8 +200,8 @@ export function WorksSlideshow({ works }: { works: SlideWork[] }) {
               onClick={() => setActive(index)}
               aria-label={`${work.title} を表示`}
               aria-current={index === active}
-              className={`label transition-colors hover:text-cyan ${
-                index === active ? "text-cyan" : "text-fg-faint"
+              className={`label transition-colors hover:text-accent ${
+                index === active ? "text-accent" : "text-fg-faint"
               }`}
             >
               {pad(index)}

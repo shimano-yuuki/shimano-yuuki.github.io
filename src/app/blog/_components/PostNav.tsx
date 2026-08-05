@@ -19,7 +19,7 @@ export function PostNav({ newer, older }: PostNavProps) {
           <span className="label text-fg-faint">← 新しい記事</span>
           <Link
             href={`/blog/${newer.slug}`}
-            className="text-fg-muted transition-colors hover:text-cyan"
+            className="text-fg-muted transition-colors hover:text-accent"
           >
             {newer.title}
           </Link>
@@ -30,7 +30,7 @@ export function PostNav({ newer, older }: PostNavProps) {
           <span className="label text-fg-faint">古い記事 →</span>
           <Link
             href={`/blog/${older.slug}`}
-            className="text-fg-muted transition-colors hover:text-cyan"
+            className="text-fg-muted transition-colors hover:text-accent"
           >
             {older.title}
           </Link>

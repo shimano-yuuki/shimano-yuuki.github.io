@@ -337,8 +337,8 @@ export function createPlaceholderArt(
    ========================================================================== */
 
 /**
- * ヘッダーの背景を canvas に直接描く。静的な一枚絵。
- * 光はシアンで右上に。名前の載る左と下は黒へ落とす。
+ * 固定背景の静止画版（WebGL 不可のとき用）。白い地に青のにじみ。
+ * 青は右上に寄せ、文字の多い左と下は白のまま残す。
  */
 export function drawHeaderArt(
   canvas: HTMLCanvasElement,
@@ -350,28 +350,53 @@ export function drawHeaderArt(
   const ctx = canvas.getContext("2d");
   if (!ctx) return;
 
-  const palette: SlidePalette = {
-    base: ["#0c1a29", "#000000"],
-    glow: "#8fd8e0",
-    accent: "#2e5f7d",
-  };
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, width, height);
+
   const random = createRandom(hashSlug("header"));
+  const spots = [
+    { x: width * 0.76, y: height * 0.26, r: width * 0.4, color: "#6ea6dc", alpha: 0.75 },
+    { x: width * 0.6, y: height * 0.45, r: width * 0.28, color: "#b7d3ef", alpha: 0.8 },
+    { x: width * 0.9, y: height * 0.6, r: width * 0.22, color: "#8cbbe6", alpha: 0.5 },
+  ];
+  for (const spot of spots) {
+    const g = ctx.createRadialGradient(spot.x, spot.y, 0, spot.x, spot.y, spot.r);
+    g.addColorStop(0, withAlpha(spot.color, spot.alpha));
+    g.addColorStop(1, withAlpha(spot.color, 0));
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, width, height);
+  }
 
-  paintBase(ctx, width, height, palette, width * 0.76, height * 0.24, random);
+  // 青の周りの小さな粒
+  for (let i = 0; i < 40; i += 1) {
+    const angle = random() * Math.PI * 2;
+    const distance = width * 0.4 * Math.sqrt(random());
+    const x = width * 0.76 + Math.cos(angle) * distance;
+    const y = height * 0.3 + Math.sin(angle) * distance * 0.8;
+    if (x < 0 || x > width || y < 0 || y > height) continue;
+    ctx.beginPath();
+    ctx.arc(x, y, 0.8 + random() * 1.8, 0, Math.PI * 2);
+    ctx.fillStyle = withAlpha("#4f8fd0", 0.15 + random() * 0.3);
+    ctx.fill();
+  }
 
-  // 文字の載る左と下を黒へ沈める
+  // 文字の多い左・下・最上部は白へ戻す
   const leftShade = ctx.createLinearGradient(0, 0, width * 0.62, 0);
-  leftShade.addColorStop(0, "rgba(0,0,0,1)");
-  leftShade.addColorStop(0.5, "rgba(0,0,0,0.72)");
-  leftShade.addColorStop(1, "rgba(0,0,0,0)");
+  leftShade.addColorStop(0, "rgba(255,255,255,1)");
+  leftShade.addColorStop(0.5, "rgba(255,255,255,0.72)");
+  leftShade.addColorStop(1, "rgba(255,255,255,0)");
   ctx.fillStyle = leftShade;
   ctx.fillRect(0, 0, width * 0.62, height);
 
-  const bottomShade = ctx.createLinearGradient(0, height * 0.4, 0, height);
-  bottomShade.addColorStop(0, "rgba(0,0,0,0)");
-  bottomShade.addColorStop(1, "rgba(0,0,0,0.9)");
+  const bottomShade = ctx.createLinearGradient(0, height * 0.45, 0, height);
+  bottomShade.addColorStop(0, "rgba(255,255,255,0)");
+  bottomShade.addColorStop(1, "rgba(255,255,255,0.9)");
   ctx.fillStyle = bottomShade;
   ctx.fillRect(0, 0, width, height);
 
-  paintGrain(ctx, width, height, random);
+  const topShade = ctx.createLinearGradient(0, height * 0.16, 0, 0);
+  topShade.addColorStop(0, "rgba(255,255,255,0)");
+  topShade.addColorStop(1, "rgba(255,255,255,0.9)");
+  ctx.fillStyle = topShade;
+  ctx.fillRect(0, 0, width, height * 0.16);
 }

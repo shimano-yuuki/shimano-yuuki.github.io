@@ -14,7 +14,7 @@ export function Footer() {
                 href={link.href}
                 target={link.href.startsWith("http") ? "_blank" : undefined}
                 rel="noreferrer"
-                className="underline decoration-cyan underline-offset-4 transition-colors hover:text-cyan"
+                className="underline decoration-accent underline-offset-4 transition-colors hover:text-accent"
               >
                 {link.label}
               </a>
@@ -24,7 +24,7 @@ export function Footer() {
             {/* feed.xml はページではなく静的ファイルなので <a> で書く */}
             <a
               href="/feed.xml"
-              className="underline decoration-cyan underline-offset-4 transition-colors hover:text-cyan"
+              className="underline decoration-accent underline-offset-4 transition-colors hover:text-accent"
             >
               RSS
             </a>

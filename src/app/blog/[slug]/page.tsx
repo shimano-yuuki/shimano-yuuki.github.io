@@ -58,7 +58,7 @@ export default async function PostPage({ params }: PostPageProps) {
       <p>
         <Link
           href="/blog"
-          className="label text-fg-muted transition-colors hover:text-cyan"
+          className="label text-fg-muted transition-colors hover:text-accent"
         >
           ← 記録
         </Link>

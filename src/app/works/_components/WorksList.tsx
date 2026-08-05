@@ -25,7 +25,7 @@ type WorksListProps = {
 /**
  * 技術タグの絞り込みと、作品の定義リスト表。
  * 表の型はトップページの WorksTable と同じ。左に項目名、右に値、
- * 区切りは 1px の横罫だけ。タグは枠を持たせず、選択中だけ cyan にする。
+ * 区切りは 1px の横罫だけ。タグは枠を持たせず、選択中だけ accent（青）にする。
  */
 export function WorksList({ works, tags }: WorksListProps) {
   const [active, setActive] = useState<string | null>(null);
@@ -76,7 +76,7 @@ export function WorksList({ works, tags }: WorksListProps) {
                 className="group grid gap-x-8 gap-y-1 py-6 sm:grid-cols-[7rem_minmax(0,1fr)] sm:py-7"
               >
                 <span className="text-sm text-fg-faint">作品名</span>
-                <span className="text-lg font-bold transition-colors group-hover:text-cyan">
+                <span className="text-lg font-bold transition-colors group-hover:text-accent">
                   {work.title}
                   {work.subtitle ? (
                     <span className="ml-3 text-sm font-normal text-fg-muted">
@@ -129,7 +129,7 @@ function FilterButton({
       onClick={onClick}
       aria-pressed={active}
       className={`label py-1 transition-colors ${
-        active ? "text-cyan" : "text-fg-faint hover:text-fg"
+        active ? "text-accent" : "text-fg-faint hover:text-fg"
       }`}
     >
       {label}

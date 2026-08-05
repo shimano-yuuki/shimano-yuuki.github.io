@@ -5,9 +5,11 @@ import type { HeaderScene } from "./HeaderScene";
 import { drawHeaderArt } from "./slideArt";
 
 /**
- * ヘッダーの背景。three.js のシェーダー（HeaderScene）で光の流れを描く。
+ * 固定背景の青い流れ。three.js のシェーダー（HeaderScene）で描く。
  *
- * - ポインタにはわずかな視差だけで応える
+ * - canvas は position: fixed。スクロールしてもこの絵は画面に残り、
+ *   文字と作品のスライドショーだけが上を流れていく
+ * - ポインタには反応しない
  * - prefers-reduced-motion: 静止した1フレームだけ描く
  * - WebGL 不可: canvas 2D の静止画（slideArt.drawHeaderArt）に落とす
  * - タブが隠れている間は計算を止める
@@ -64,15 +66,6 @@ export function HeroBackdrop() {
         reducedQuery.removeEventListener("change", applyMotionPreference),
       );
 
-      const onPointerMove = (event: PointerEvent) => {
-        header.setPointer(
-          (event.clientX / window.innerWidth) * 2 - 1,
-          1 - (event.clientY / window.innerHeight) * 2,
-        );
-      };
-      window.addEventListener("pointermove", onPointerMove, { passive: true });
-      cleanups.push(() => window.removeEventListener("pointermove", onPointerMove));
-
       const onVisibility = () => {
         if (reducedQuery.matches) return;
         if (document.hidden) header.stop();
@@ -95,7 +88,7 @@ export function HeroBackdrop() {
     <canvas
       ref={canvasRef}
       aria-hidden="true"
-      className="absolute inset-0 h-full w-full"
+      className="fixed inset-0 -z-10 h-full w-full"
     />
   );
 }

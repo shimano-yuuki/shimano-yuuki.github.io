@@ -26,7 +26,7 @@ export default function NotFound() {
             <li key={route.href}>
               <Link
                 href={route.href}
-                className="text-sm text-fg underline decoration-cyan underline-offset-4 transition-colors hover:text-cyan"
+                className="text-sm text-fg underline decoration-accent underline-offset-4 transition-colors hover:text-accent"
               >
                 {route.labelJa}
               </Link>

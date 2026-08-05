@@ -14,7 +14,7 @@ export function JournalList({ posts }: { posts: Post[] }) {
         <h2 className="text-sm text-fg-faint">記録</h2>
         <Link
           href="/blog"
-          className="link-sweep text-sm text-fg-muted transition-colors hover:text-cyan"
+          className="link-sweep text-sm text-fg-muted transition-colors hover:text-accent"
         >
           すべて見る
         </Link>
@@ -35,7 +35,7 @@ export function JournalList({ posts }: { posts: Post[] }) {
               <time dateTime={post.date} className="label text-fg-faint">
                 {formatDate(post.date)}
               </time>
-              <span className="transition-colors group-hover:text-cyan">
+              <span className="transition-colors group-hover:text-accent">
                 {post.title}
               </span>
             </Link>

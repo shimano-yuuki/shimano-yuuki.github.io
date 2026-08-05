@@ -1,24 +1,26 @@
 @import "tailwindcss";
 
 /* ==========================================================================
-   デザイントークン — 純黒にクリーム白
-   装飾はトップの作品スライドショー（WebGL）ただ1つ。文字組みは飾らない。
+   デザイントークン — 白地に黒、差し色は青
+   絵は「固定背景の青い流れ」と「作品スライドショー」の2つ。文字組みは飾らない。
    ========================================================================== */
 
 @theme {
-  /* 地。純黒。スライドの絵とキャプションはこの上に載る */
-  --color-bg: #000000;
+  /* 地。白。トップでは固定背景の青い流れがこの上に描かれる */
+  --color-bg: #ffffff;
 
-  /* 文字。クリーム白と、その減衰2段 */
-  --color-fg: #f2f1e8;
-  --color-fg-muted: #b9b7ac;
-  --color-fg-faint: #a8a69b;
+  /* 文字。黒と、その減衰2段。
+     白地では小さい文字のアンチエイリアスで実測が下振れするので、
+     名目値は基準より濃い目に取る（実測で確認済みの値） */
+  --color-fg: #10151d;
+  --color-fg-muted: #333c47;
+  --color-fg-faint: #454e59;
 
   /* 罫。作品表の行区切りにだけ使う */
-  --color-line: #22252b;
+  --color-line: #e2e7ed;
 
-  /* 差し色。シアン。リンク下線・ホバー・ステータス行のみ */
-  --color-cyan: #8fd8e0;
+  /* 差し色。青。リンク下線・ホバー・ステータス行のみ */
+  --color-accent: #1e40af;
 
   /* 書体 */
   --font-display: var(--font-display-src), "Helvetica Neue", sans-serif;
@@ -32,7 +34,7 @@
 
 @layer base {
   :root {
-    color-scheme: dark only;
+    color-scheme: light;
     background-color: var(--color-bg);
   }
 
@@ -51,12 +53,12 @@
   }
 
   ::selection {
-    background-color: var(--color-cyan);
+    background-color: var(--color-accent);
     color: var(--color-bg);
   }
 
   :focus-visible {
-    outline: 1px solid var(--color-cyan);
+    outline: 1px solid var(--color-accent);
     outline-offset: 4px;
   }
 }
@@ -105,7 +107,7 @@
     bottom: -0.2em;
     width: 100%;
     height: 1px;
-    background-color: var(--color-cyan);
+    background-color: var(--color-accent);
     transform: scaleX(0);
     transform-origin: right;
     transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
@@ -187,12 +189,12 @@
 .prose a {
   color: var(--color-fg);
   text-decoration: underline;
-  text-decoration-color: var(--color-cyan);
+  text-decoration-color: var(--color-accent);
   text-underline-offset: 0.28em;
 }
 
 .prose a:hover {
-  color: var(--color-cyan);
+  color: var(--color-accent);
 }
 
 .prose strong {
@@ -267,7 +269,7 @@
 .prose :not(pre) > code {
   font-family: var(--font-mono);
   font-size: 0.85em;
-  background-color: #16191e;
+  background-color: #eef2f8;
   color: var(--color-fg);
   padding: 0.15em 0.45em;
   border-radius: 3px;
@@ -280,7 +282,8 @@
   padding: 1.3rem 1.4rem;
   border-radius: 6px;
   overflow-x: auto;
-  background-color: #101318 !important;
+  /* shiki（github-light）が置く inline の地色より、誌面の淡い青灰を優先 */
+  background-color: #f4f7fb !important;
 }
 
 .prose pre code {
@@ -289,10 +292,9 @@
   padding: 0;
 }
 
-/* コードの色は落ち着いた明度差だけにする */
+/* github-light の色相は残しつつ、小さい字でも実測 7:1 に届く明度まで沈める */
 .prose pre span {
-  color: inherit !important;
-  filter: grayscale(0.6) brightness(1.5);
+  filter: brightness(0.55) saturate(1.15);
 }
 
 .prose .heading-anchor {

@@ -52,7 +52,7 @@ export default async function WorkPage({ params }: Props) {
     <article className="measure pt-28 pb-32 sm:pt-32 sm:pb-40">
       <Link
         href="/works"
-        className="text-sm text-fg-faint transition-colors hover:text-cyan"
+        className="text-sm text-fg-faint transition-colors hover:text-accent"
       >
         ← 作品一覧
       </Link>
@@ -101,7 +101,7 @@ export default async function WorkPage({ params }: Props) {
                     href={href}
                     target="_blank"
                     rel="noreferrer noopener"
-                    className="text-sm text-fg underline decoration-cyan underline-offset-4 transition-colors hover:text-cyan"
+                    className="text-sm text-fg underline decoration-accent underline-offset-4 transition-colors hover:text-accent"
                   >
                     {label} ↗
                   </a>
@@ -149,7 +149,7 @@ export default async function WorkPage({ params }: Props) {
         {previous ? (
           <Link
             href={`/works/${previous.slug}`}
-            className="text-fg-muted transition-colors hover:text-cyan"
+            className="text-fg-muted transition-colors hover:text-accent"
           >
             ← 前の作品
           </Link>
@@ -159,7 +159,7 @@ export default async function WorkPage({ params }: Props) {
         {next ? (
           <Link
             href={`/works/${next.slug}`}
-            className="text-fg-muted transition-colors hover:text-cyan"
+            className="text-fg-muted transition-colors hover:text-accent"
           >
             次の作品 →
           </Link>

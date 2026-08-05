@@ -25,7 +25,7 @@ export function WorksTable({ works }: { works: Work[] }) {
               className="group grid gap-x-8 gap-y-1 py-6 sm:grid-cols-[7rem_minmax(0,1fr)] sm:py-7"
             >
               <span className="text-sm text-fg-faint">作品名</span>
-              <span className="text-lg font-bold transition-colors group-hover:text-cyan">
+              <span className="text-lg font-bold transition-colors group-hover:text-accent">
                 {work.title}
                 {work.subtitle ? (
                   <span className="ml-3 text-sm font-normal text-fg-muted">

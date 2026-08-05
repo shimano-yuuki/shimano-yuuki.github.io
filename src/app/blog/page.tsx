@@ -44,7 +44,7 @@ export default function BlogPage() {
                     <time dateTime={post.date} className="label text-fg-faint">
                       {formatDate(post.date)}
                     </time>
-                    <span className="transition-colors group-hover:text-cyan">
+                    <span className="transition-colors group-hover:text-accent">
                       {post.title}
                     </span>
                     {post.tags.length > 0 ? (
