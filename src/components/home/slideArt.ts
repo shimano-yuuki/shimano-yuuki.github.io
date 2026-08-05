@@ -272,9 +272,7 @@ function paintPhoneMock(
 
 /**
  * 作品のサンプルスライドを描いて canvas で返す。
- *
- * スライドは全幅×56svh に cover で切り出されるため、確実に見える範囲は
- * 中央の x: 0.25〜0.75 / y: 0.25〜0.75。作品名とモックアップはこの帯に収める。
+ * スライドは contain 表示（全体が見える）。構図は中央帯に寄せてある。
  */
 export function createPlaceholderArt(
   slug: string,

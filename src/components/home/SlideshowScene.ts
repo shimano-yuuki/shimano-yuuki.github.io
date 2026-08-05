@@ -5,7 +5,8 @@ import * as THREE from "three";
  *
  * 全画面クアッド1枚に2枚のテクスチャを渡し、シェーダーで
  * 「ノイズで縁がにじむクロスフェード + わずかな変位」の遷移を描く。
- * 待ち時間中もごくゆっくり漂わせて、静止画の硬さを消す（reduced では止める）。
+ * 絵は contain ではめる——渡された画像の寸法を切り抜かず全部見せ、
+ * 余った部分は誌面と同じ白で埋める。漂い（ケンバーンズ）は持たない。
  *
  * 演出の判断は docs/DESIGN.md の「作品スライドショー」の節が正。
  */
@@ -27,10 +28,8 @@ const fragmentShader = /* glsl */ `
   uniform float uProgress;     // 0..1 の遷移。待機中は 0
   uniform float uTime;
   uniform float uCanvasAspect;
-  uniform float uImageAspect;
-  uniform float uPhaseFrom;    // 漂いの位相。スライドごとにずらす
-  uniform float uPhaseTo;
-  uniform float uDrift;        // 漂いの強さ。reduced-motion では 0
+  uniform float uAspectFrom;   // 各テクスチャの縦横比
+  uniform float uAspectTo;
 
   float hash(vec2 p) {
     return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
@@ -47,22 +46,18 @@ const fragmentShader = /* glsl */ `
     );
   }
 
-  // 画像をキャンバスに cover ではめる
-  vec2 cover(vec2 uv) {
-    float r = uCanvasAspect / uImageAspect;
-    if (r > 1.0) return vec2(uv.x, 0.5 + (uv.y - 0.5) / r);
-    return vec2(0.5 + (uv.x - 0.5) * r, uv.y);
-  }
-
-  // 待機中の漂い。少し拡大して、ゆっくり視点を流す
-  vec2 drift(vec2 uv, float phase) {
-    float t = uTime * 0.05 + phase;
-    vec2 offset = vec2(sin(t), cos(t * 0.7)) * 0.011 * uDrift;
-    return (uv - 0.5) / 1.06 + 0.5 + offset;
+  // 画像を contain ではめる。枠の外は誌面と同じ白
+  vec4 pick(sampler2D tex, float imageAspect, vec2 uv, vec2 offset) {
+    float r = uCanvasAspect / imageAspect;
+    vec2 st = uv;
+    if (r > 1.0) st.x = 0.5 + (uv.x - 0.5) * r;
+    else st.y = 0.5 + (uv.y - 0.5) / r;
+    st += offset;
+    float inside = step(0.0, st.x) * step(st.x, 1.0) * step(0.0, st.y) * step(st.y, 1.0);
+    return mix(vec4(1.0), texture2D(tex, st), inside);
   }
 
   void main() {
-    vec2 uv = cover(vUv);
     float p = uProgress;
 
     // 遷移の山（始まりと終わりは歪みゼロ）
@@ -70,15 +65,14 @@ const fragmentShader = /* glsl */ `
     float n = noise(vUv * 4.0 + vec2(0.0, uTime * 0.02));
     vec2 direction = vec2(n - 0.5, noise(vUv * 4.0 + 7.3) - 0.5);
 
-    vec2 uvFrom = drift(uv, uPhaseFrom) + direction * 0.10 * wave * p;
-    vec2 uvTo = drift(uv, uPhaseTo) - direction * 0.10 * wave * (1.0 - p);
+    vec4 from = pick(uFrom, uAspectFrom, vUv, direction * 0.10 * wave * p);
+    vec4 to = pick(uTo, uAspectTo, vUv, -direction * 0.10 * wave * (1.0 - p));
 
     // 縁がノイズでにじむクロスフェード
     float m = clamp(p + (n - 0.5) * 0.35 * wave, 0.0, 1.0);
     m = smoothstep(0.0, 1.0, m);
 
-    vec3 color = mix(texture2D(uFrom, uvFrom).rgb, texture2D(uTo, uvTo).rgb, m);
-    gl_FragColor = vec4(color, 1.0);
+    gl_FragColor = vec4(mix(from.rgb, to.rgb, m), 1.0);
   }
 `;
 
@@ -92,7 +86,7 @@ export type SlideshowSceneOptions = {
   canvas: HTMLCanvasElement;
   /** スライドの絵。プレースホルダー canvas か、読み込み済みの実画像 */
   images: (HTMLCanvasElement | HTMLImageElement)[];
-  /** prefers-reduced-motion。true なら漂いなし・遷移は瞬時 */
+  /** prefers-reduced-motion。true なら遷移は瞬時 */
   reduced: boolean;
 };
 
@@ -103,6 +97,7 @@ export class SlideshowScene {
   private material: THREE.ShaderMaterial;
   private geometry: THREE.PlaneGeometry;
   private textures: THREE.Texture[];
+  private aspects: number[];
 
   private current = 0;
   private frame = 0;
@@ -129,8 +124,8 @@ export class SlideshowScene {
       texture.magFilter = THREE.LinearFilter;
       return texture;
     });
+    this.aspects = images.map((image) => image.width / image.height);
 
-    const first = images[0];
     this.material = new THREE.ShaderMaterial({
       vertexShader,
       fragmentShader,
@@ -140,10 +135,8 @@ export class SlideshowScene {
         uProgress: { value: 0 },
         uTime: { value: 0 },
         uCanvasAspect: { value: 1.6 },
-        uImageAspect: { value: first.width / first.height },
-        uPhaseFrom: { value: 0 },
-        uPhaseTo: { value: 0 },
-        uDrift: { value: reduced ? 0 : 1 },
+        uAspectFrom: { value: this.aspects[0] },
+        uAspectTo: { value: this.aspects[0] },
       },
       depthTest: false,
       depthWrite: false,
@@ -170,21 +163,20 @@ export class SlideshowScene {
       this.transitionStart = null;
       uniforms.uFrom.value = this.textures[index];
       uniforms.uTo.value = this.textures[index];
-      uniforms.uPhaseFrom.value = index * 2.4;
-      uniforms.uPhaseTo.value = index * 2.4;
+      uniforms.uAspectFrom.value = this.aspects[index];
+      uniforms.uAspectTo.value = this.aspects[index];
       uniforms.uProgress.value = 0;
       this.renderStill();
       return;
     }
 
     // 遷移の途中でも、いま見えている側から次へつなぐ
-    uniforms.uFrom.value =
-      this.transitionStart !== null && uniforms.uProgress.value > 0.5
-        ? uniforms.uTo.value
-        : uniforms.uFrom.value;
-    uniforms.uPhaseFrom.value = this.current * 2.4;
+    if (this.transitionStart !== null && uniforms.uProgress.value > 0.5) {
+      uniforms.uFrom.value = uniforms.uTo.value;
+      uniforms.uAspectFrom.value = uniforms.uAspectTo.value;
+    }
     uniforms.uTo.value = this.textures[index];
-    uniforms.uPhaseTo.value = index * 2.4;
+    uniforms.uAspectTo.value = this.aspects[index];
     uniforms.uProgress.value = 0;
     this.transitionStart = performance.now();
     this.current = index;
@@ -192,7 +184,6 @@ export class SlideshowScene {
 
   setReduced(reduced: boolean) {
     this.reduced = reduced;
-    this.material.uniforms.uDrift.value = reduced ? 0 : 1;
     if (reduced) {
       this.stop();
       this.show(this.current);
@@ -216,7 +207,7 @@ export class SlideshowScene {
         if (t >= 1) {
           this.transitionStart = null;
           uniforms.uFrom.value = this.textures[this.current];
-          uniforms.uPhaseFrom.value = this.current * 2.4;
+          uniforms.uAspectFrom.value = this.aspects[this.current];
           uniforms.uProgress.value = 0;
         }
       }

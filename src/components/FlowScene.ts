@@ -109,12 +109,12 @@ const fragmentShader = /* glsl */ `
   }
 `;
 
-export type HeaderSceneOptions = {
+export type FlowSceneOptions = {
   canvas: HTMLCanvasElement;
   reduced: boolean;
 };
 
-export class HeaderScene {
+export class FlowScene {
   private renderer: THREE.WebGLRenderer;
   private scene = new THREE.Scene();
   private camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
@@ -126,7 +126,7 @@ export class HeaderScene {
   private reduced: boolean;
   private startedAt = performance.now();
 
-  constructor({ canvas, reduced }: HeaderSceneOptions) {
+  constructor({ canvas, reduced }: FlowSceneOptions) {
     this.reduced = reduced;
 
     this.renderer = new THREE.WebGLRenderer({

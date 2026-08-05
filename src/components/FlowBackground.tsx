@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import type { HeaderScene } from "./HeaderScene";
-import { drawHeaderArt } from "./slideArt";
+import type { FlowScene } from "./FlowScene";
+import { drawHeaderArt } from "@/components/home/slideArt";
 
 /**
- * 固定背景の青い流れ。three.js のシェーダー（HeaderScene）で描く。
+ * 固定背景の青い流れ。three.js のシェーダー（FlowScene）で描く。
  *
  * - canvas は position: fixed。スクロールしてもこの絵は画面に残り、
  *   文字と作品のスライドショーだけが上を流れていく
@@ -14,14 +14,14 @@ import { drawHeaderArt } from "./slideArt";
  * - WebGL 不可: canvas 2D の静止画（slideArt.drawHeaderArt）に落とす
  * - タブが隠れている間は計算を止める
  */
-export function HeroBackdrop() {
+export function FlowBackground() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    let scene: HeaderScene | null = null;
+    let scene: FlowScene | null = null;
     let disposed = false;
     const cleanups: (() => void)[] = [];
 
@@ -36,13 +36,13 @@ export function HeroBackdrop() {
     };
 
     // three（数百KB）は初期表示のクリティカルパスから外す
-    import("./HeaderScene").then(({ HeaderScene }) => {
+    import("./FlowScene").then(({ FlowScene }) => {
       if (disposed) return;
 
       const reducedQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
 
       try {
-        scene = new HeaderScene({ canvas, reduced: reducedQuery.matches });
+        scene = new FlowScene({ canvas, reduced: reducedQuery.matches });
       } catch {
         drawFallback();
         window.addEventListener("resize", drawFallback);

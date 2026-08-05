@@ -9,8 +9,9 @@ import type { SlideshowScene } from "./SlideshowScene";
  * トップの作品スライドショー。参照は mofu-dev.com（docs/DESIGN.md）。
  *
  * - 一枚絵が数秒ごとに、にじむような遷移で次の作品へ変わる
+ * - 絵は measure の幅に収め、contain ではめる（画像は切り抜かず全部見せる）
  * - 絵を押すとその作品の詳細ページへ飛ぶ
- * - キャプション（番号・作品名）は絵の上ではなく下の黒地に置く。
+ * - キャプション（番号・作品名）は絵の上ではなく下に置く。
  *   絵の上の文字はコントラストを実測で保証できないため
  * - ホバー・フォーカス・タブ非表示・reduced-motion で自動送りは止まる
  * - WebGL 不可: 同じ配色の CSS グラデーションが代わりに見える。
@@ -147,32 +148,36 @@ export function WorksSlideshow({ works }: { works: SlideWork[] }) {
 
   return (
     <section aria-label="作品スライドショー">
-      <div
-        className="relative h-[56svh] min-h-[20rem] w-full overflow-hidden"
-        onPointerEnter={() => setPaused(true)}
-        onPointerLeave={() => setPaused(false)}
-        onFocus={() => setPaused(true)}
-        onBlur={() => setPaused(false)}
-      >
-        <Link
-          href={`/works/${current.slug}`}
-          aria-label={`${current.title} の詳細へ`}
-          className="group absolute inset-0 block"
+      {/* 絵は端まで広げず、誌面（measure）の幅に収める。
+          contain ではめるので、渡された画像は切り抜かれず全部見える */}
+      <div className="measure">
+        <div
+          className="relative h-[56svh] min-h-[20rem] overflow-hidden"
+          onPointerEnter={() => setPaused(true)}
+          onPointerLeave={() => setPaused(false)}
+          onFocus={() => setPaused(true)}
+          onBlur={() => setPaused(false)}
         >
-          {/* WebGL 不可のときに見える地。作品と同じ配色 */}
-          <div
-            aria-hidden="true"
-            className="absolute inset-0 transition-[background] duration-700"
-            style={{ background: fallbackGradient(current.slug) }}
-          />
-          <canvas
-            ref={canvasRef}
-            aria-hidden="true"
-            className={`absolute inset-0 h-full w-full transition-opacity duration-700 ${
-              webglReady ? "opacity-100" : "opacity-0"
-            }`}
-          />
-        </Link>
+          <Link
+            href={`/works/${current.slug}`}
+            aria-label={`${current.title} の詳細へ`}
+            className="group absolute inset-0 block"
+          >
+            {/* WebGL 不可のときに見える地。作品と同じ配色 */}
+            <div
+              aria-hidden="true"
+              className="absolute inset-0 transition-[background] duration-700"
+              style={{ background: fallbackGradient(current.slug) }}
+            />
+            <canvas
+              ref={canvasRef}
+              aria-hidden="true"
+              className={`absolute inset-0 h-full w-full transition-opacity duration-700 ${
+                webglReady ? "opacity-100" : "opacity-0"
+              }`}
+            />
+          </Link>
+        </div>
       </div>
 
       {/* キャプション。黒地の上に置き、コントラスト基準を確実に守る */}

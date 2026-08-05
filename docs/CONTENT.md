@@ -16,7 +16,8 @@ summary: 一覧カードに出る1〜2文。   # 必須
 date: 2026-08-01         # 必須。YYYY-MM-DD
 role: [設計, 実装]
 stack: [Flutter, TypeScript]   # /works の絞り込みタグになる
-cover: ""                # 画像パス。空なら「刷り見本」表示になる
+cover: ""                # 画像パス。空ならサンプル作品画が自動生成される。
+                         # 書くと トップのスライド / 詳細ページ上部 / OG に出る
 gallery: []
 links:
   github: https://github.com/...   # 空文字のリンクは表示されない
@@ -47,7 +48,9 @@ draft: false
 ## 画像
 
 - `public/images/works/<slug>/cover.jpg` に置いて frontmatter の `cover` にパスを書く
-- **最適化は走らない**（GitHub Pages の静的配信）。長辺 2000px・数百 KB まで縮めてから置く
+- 推奨は 1600×1000（16:10）・300KB 以下。スライドは contain 表示なので
+  どの縦横比でも切り抜かれない
+- **最適化は走らない**（GitHub Pages の静的配信）。縮めてから置く
 
 ## 反映される場所
 

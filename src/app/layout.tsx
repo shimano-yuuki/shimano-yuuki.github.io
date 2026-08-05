@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { fontVariables } from "./fonts";
 import "./globals.css";
+import { FlowBackground } from "@/components/FlowBackground";
 import { Footer } from "@/components/layout/Footer";
 import { Header } from "@/components/layout/Header";
 import { site } from "@/lib/site";
@@ -33,6 +34,8 @@ export default function RootLayout({
   return (
     <html lang="ja" className={`${fontVariables} h-full antialiased`}>
       <body className="flex min-h-full flex-col text-fg">
+        {/* 全ページ共通の固定背景（青い流れ）。WebGL 不可なら静止画 */}
+        <FlowBackground />
         <a
           href="#main"
           className="label sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:bg-fg focus:px-4 focus:py-2 focus:text-bg"

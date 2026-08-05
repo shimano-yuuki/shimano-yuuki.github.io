@@ -72,6 +72,18 @@ export default async function WorkPage({ params }: Props) {
         </p>
       </header>
 
+      {/* プロダクトの写真。cover があるときだけ、本文より先に見せる */}
+      {work.cover ? (
+        <Image
+          src={work.cover}
+          alt={`${work.title} のカバー画像`}
+          width={1600}
+          height={1000}
+          priority
+          className="mt-12 h-auto w-full max-w-[56rem]"
+        />
+      ) : null}
+
       {/* 定型項目。一覧と同じ定義リストの型 */}
       <dl className="mt-12 max-w-[42rem] border-b border-line">
         <MetaRow label="年">
