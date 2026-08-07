@@ -3,6 +3,9 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches: [main]
+  # 毎日 06:00 JST に再ビルドして、ホームの GitHub の草を最新に保つ
+  schedule:
+    - cron: "0 21 * * *"
   # 「Actions」タブから手動でも流せるようにしておく
   workflow_dispatch:
 
@@ -21,7 +24,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+      # fetch-depth: 0 — ホームの「最近の更新」はビルド時に git log から読む
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:

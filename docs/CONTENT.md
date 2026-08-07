@@ -21,7 +21,7 @@ cover: ""                # 画像パス。空ならサンプル作品画が自�
 gallery: []
 links:
   github: https://github.com/...   # 空文字のリンクは表示されない
-featured: true           # true でトップページにも出る
+featured: true           # true でトップのスライドショーに出る（作品表には全作品が出る）
 order: 1                 # 一覧の並び。小さいほど前
 draft: false             # true は開発中のみ表示
 ---

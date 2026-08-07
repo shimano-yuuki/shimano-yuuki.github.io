@@ -14,9 +14,6 @@ export function Header() {
       </Link>
 
       <nav className="flex gap-5 text-sm sm:gap-7">
-        <Link href="/works" className="link-sweep transition-colors hover:text-accent">
-          作品
-        </Link>
         <Link href="/blog" className="link-sweep transition-colors hover:text-accent">
           記録
         </Link>

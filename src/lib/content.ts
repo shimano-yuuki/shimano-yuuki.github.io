@@ -134,19 +134,6 @@ export function getWorkNeighbors(slug: string) {
   };
 }
 
-/** 作品の絞り込みに使う技術タグ。使用数の多い順。 */
-export function getStackTags(): string[] {
-  const counts = new Map<string, number>();
-  for (const work of loadWorks()) {
-    for (const item of work.stack) {
-      counts.set(item, (counts.get(item) ?? 0) + 1);
-    }
-  }
-  return [...counts.entries()]
-    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
-    .map(([tag]) => tag);
-}
-
 /* ==========================================================================
    記事
    ========================================================================== */

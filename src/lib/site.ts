@@ -20,7 +20,6 @@ export const site = {
 
 export const navigation = [
   { label: "Index", labelJa: "トップ", href: "/" },
-  { label: "Works", labelJa: "作品", href: "/works" },
   { label: "Journal", labelJa: "記録", href: "/blog" },
   { label: "About", labelJa: "自己紹介", href: "/about" },
 ] as const;

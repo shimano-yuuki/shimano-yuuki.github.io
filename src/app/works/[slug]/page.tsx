@@ -51,10 +51,10 @@ export default async function WorkPage({ params }: Props) {
   return (
     <article className="measure pt-28 pb-32 sm:pt-32 sm:pb-40">
       <Link
-        href="/works"
+        href="/"
         className="text-sm text-fg-faint transition-colors hover:text-accent"
       >
-        ← 作品一覧
+        ← トップ
       </Link>
 
       {/* 扉。見出しは普通の太字にとどめる */}
