@@ -15,7 +15,7 @@ gallery: []
 # リポジトリは非公開のためリンクは載せない
 links: {}
 featured: true
-order: 2
+order: 3
 ---
 
 Mapbox を実際に触ってみるために作ったプロトタイプです。

@@ -14,10 +14,11 @@ stack:
   - Firebase
 cover: /images/works/figure/cover.jpg
 gallery: []
-# リポジトリは非公開のためリンクは載せない。ストア公開後にストアリンクを足す
-links: {}
+# リポジトリは非公開のため App Store のみ
+links:
+  App Store: https://apps.apple.com/jp/app/figure-%E7%AD%8B%E3%83%88%E3%83%AC-%E3%83%88%E3%83%AC%E3%83%BC%E3%83%8B%E3%83%B3%E3%82%B0-%E3%83%95%E3%82%A3%E3%83%83%E3%83%88%E3%83%8D%E3%82%B9/id6760589898
 featured: true
-order: 3
+order: 2
 ---
 
 「figure」は、筋トレとランニングの記録・分析アプリです。

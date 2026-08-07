@@ -3,85 +3,20 @@ import * as THREE from "three";
 /**
  * 作品スライドショーの WebGL 側。
  *
- * 全画面クアッド1枚に2枚のテクスチャを渡し、シェーダーで
- * 「ノイズで縁がにじむクロスフェード + わずかな変位」の遷移を描く。
- * 絵は contain ではめる——渡された画像の寸法を切り抜かず全部見せ、
- * 余った部分は誌面と同じ白で埋める。漂い（ケンバーンズ）は持たない。
+ * スライド1枚 = 平面メッシュ1枚。中央の枠（slot）に contain ではめ、
+ * 左右には前後のスライドの端が覗く。遷移は横へ滑るパン
+ * （減衰つきの追従）で、自動送り・番号ボタン・ドラッグのどれも同じ道を通る。
+ * 循環配置なので最後の次は最初へ、同じ向きに流れ続ける。
  *
  * 演出の判断は docs/DESIGN.md の「作品スライドショー」の節が正。
  */
 
-const vertexShader = /* glsl */ `
-  varying vec2 vUv;
-  void main() {
-    vUv = uv;
-    gl_Position = vec4(position.xy, 0.0, 1.0);
-  }
-`;
-
-const fragmentShader = /* glsl */ `
-  precision highp float;
-
-  varying vec2 vUv;
-  uniform sampler2D uFrom;
-  uniform sampler2D uTo;
-  uniform float uProgress;     // 0..1 の遷移。待機中は 0
-  uniform float uTime;
-  uniform float uCanvasAspect;
-  uniform float uAspectFrom;   // 各テクスチャの縦横比
-  uniform float uAspectTo;
-
-  float hash(vec2 p) {
-    return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
-  }
-
-  float noise(vec2 p) {
-    vec2 i = floor(p);
-    vec2 f = fract(p);
-    vec2 u = f * f * (3.0 - 2.0 * f);
-    return mix(
-      mix(hash(i), hash(i + vec2(1.0, 0.0)), u.x),
-      mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x),
-      u.y
-    );
-  }
-
-  // 画像を contain ではめる。枠の外は透明（後ろの青い流れが見える）
-  vec4 pick(sampler2D tex, float imageAspect, vec2 uv, vec2 offset) {
-    float r = uCanvasAspect / imageAspect;
-    vec2 st = uv;
-    if (r > 1.0) st.x = 0.5 + (uv.x - 0.5) * r;
-    else st.y = 0.5 + (uv.y - 0.5) / r;
-    st += offset;
-    float inside = step(0.0, st.x) * step(st.x, 1.0) * step(0.0, st.y) * step(st.y, 1.0);
-    return texture2D(tex, st) * inside;
-  }
-
-  void main() {
-    float p = uProgress;
-
-    // 遷移の山（始まりと終わりは歪みゼロ）
-    float wave = p * (1.0 - p) * 4.0;
-    float n = noise(vUv * 4.0 + vec2(0.0, uTime * 0.02));
-    vec2 direction = vec2(n - 0.5, noise(vUv * 4.0 + 7.3) - 0.5);
-
-    vec4 from = pick(uFrom, uAspectFrom, vUv, direction * 0.10 * wave * p);
-    vec4 to = pick(uTo, uAspectTo, vUv, -direction * 0.10 * wave * (1.0 - p));
-
-    // 縁がノイズでにじむクロスフェード。
-    // 枠の外はアルファ 0（premultiplied なので rgb も 0 のまま混ぜる）
-    float m = clamp(p + (n - 0.5) * 0.35 * wave, 0.0, 1.0);
-    m = smoothstep(0.0, 1.0, m);
-
-    gl_FragColor = mix(from, to, m);
-  }
-`;
-
-const TRANSITION_MS = 2200;
-
-function easeInOutCubic(t: number): number {
-  return t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2;
-}
+/** スライド同士のすき間（CSS px） */
+const GAP = 16;
+/** 追従の強さ。大きいほど速く目標へ寄る（1秒あたりの減衰率） */
+const DAMPING = 5;
+/** ドラッグをスライド送りとみなす移動量（スライド幅比） */
+const SWIPE_THRESHOLD = 0.18;
 
 export type SlideshowSceneOptions = {
   canvas: HTMLCanvasElement;
@@ -94,23 +29,30 @@ export type SlideshowSceneOptions = {
 export class SlideshowScene {
   private renderer: THREE.WebGLRenderer;
   private scene = new THREE.Scene();
-  private camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
-  private material: THREE.ShaderMaterial;
-  private geometry: THREE.PlaneGeometry;
-  private textures: THREE.Texture[];
+  private camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 10);
+  private geometry = new THREE.PlaneGeometry(1, 1);
+  private meshes: THREE.Mesh[] = [];
+  private materials: THREE.MeshBasicMaterial[] = [];
+  private textures: THREE.Texture[] = [];
   private aspects: number[];
 
-  private current = 0;
+  /** スライド単位の連続座標。3 → 4 と進み続ける（4枚なら 4 ≡ 0） */
+  private pos = 0;
+  private target = 0;
+  private dragging = false;
+  private dragBase = 0;
+
+  private slotWidth = 1;
+  private viewHeight = 1;
   private frame = 0;
   private running = false;
-  private startedAt = performance.now();
-  private transitionStart: number | null = null;
+  private lastTick = 0;
   private reduced: boolean;
 
   constructor({ canvas, images, reduced }: SlideshowSceneOptions) {
     this.reduced = reduced;
 
-    // alpha: 枠の外を透明にして、後ろの固定背景（青い流れ）を見せる
+    // alpha: 絵の外を透明にして、後ろの固定背景（青い流れ）を見せる
     this.renderer = new THREE.WebGLRenderer({
       canvas,
       antialias: false,
@@ -121,77 +63,136 @@ export class SlideshowScene {
     this.renderer.setClearColor(0x000000, 0);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
-    this.textures = images.map((image) => {
+    this.aspects = images.map((image) => image.width / image.height);
+    for (const image of images) {
       const texture = new THREE.CanvasTexture(image);
       texture.colorSpace = THREE.SRGBColorSpace;
       texture.minFilter = THREE.LinearFilter;
       texture.magFilter = THREE.LinearFilter;
-      return texture;
-    });
-    this.aspects = images.map((image) => image.width / image.height);
+      this.textures.push(texture);
 
-    this.material = new THREE.ShaderMaterial({
-      vertexShader,
-      fragmentShader,
-      uniforms: {
-        uFrom: { value: this.textures[0] },
-        uTo: { value: this.textures[0] },
-        uProgress: { value: 0 },
-        uTime: { value: 0 },
-        uCanvasAspect: { value: 1.6 },
-        uAspectFrom: { value: this.aspects[0] },
-        uAspectTo: { value: this.aspects[0] },
-      },
-      transparent: true,
-      depthTest: false,
-      depthWrite: false,
-    });
+      const material = new THREE.MeshBasicMaterial({
+        map: texture,
+        transparent: true,
+        depthTest: false,
+        depthWrite: false,
+      });
+      this.materials.push(material);
 
-    this.geometry = new THREE.PlaneGeometry(2, 2);
-    this.scene.add(new THREE.Mesh(this.geometry, this.material));
+      const mesh = new THREE.Mesh(this.geometry, material);
+      this.meshes.push(mesh);
+      this.scene.add(mesh);
+    }
+    this.camera.position.z = 1;
   }
 
-  resize(width: number, height: number) {
+  private get spacing() {
+    return this.slotWidth + GAP;
+  }
+
+  resize(width: number, height: number, slotWidth: number) {
     if (width === 0 || height === 0) return;
     this.renderer.setSize(width, height, false);
-    this.material.uniforms.uCanvasAspect.value = width / height;
+    this.camera.left = -width / 2;
+    this.camera.right = width / 2;
+    this.camera.top = height / 2;
+    this.camera.bottom = -height / 2;
+    this.camera.updateProjectionMatrix();
+    this.slotWidth = Math.max(1, slotWidth);
+    this.viewHeight = height;
+    this.layout();
     if (!this.running) this.renderStill();
   }
 
-  /** index のスライドへ。reduced や停止中は遷移を挟まず切り替える */
+  /**
+   * 循環配置。各スライドを pos に最も近い周回位置へ置き、
+   * 中央から離れるほど少し薄く・小さくして主役を1枚に保つ
+   */
+  private layout() {
+    const count = this.meshes.length;
+    for (let i = 0; i < count; i++) {
+      const turn = count > 1 ? Math.round((this.pos - i) / count) : 0;
+      const k = i + count * turn;
+      const distance = Math.abs(k - this.pos);
+
+      // contain: slot × 高さの枠に、画像の縦横比のまま収める
+      const aspect = this.aspects[i];
+      const height = Math.min(this.viewHeight, this.slotWidth / aspect);
+      const width = height * aspect;
+      const shrink = 1 - Math.min(distance, 1) * 0.04;
+
+      const mesh = this.meshes[i];
+      mesh.position.x = (k - this.pos) * this.spacing;
+      mesh.scale.set(width * shrink, height * shrink, 1);
+      this.materials[i].opacity = Math.max(0.45, 1 - distance * 0.55);
+    }
+  }
+
+  /** いまの目標を 0..N-1 に正規化した値 */
+  private normalizedTarget() {
+    const count = this.meshes.length;
+    return ((Math.round(this.target) % count) + count) % count;
+  }
+
+  /** index のスライドへ、近い方の向きでパンする */
   show(index: number) {
-    if (index === this.current && this.transitionStart === null) return;
-    const uniforms = this.material.uniforms;
+    const count = this.meshes.length;
+    if (count === 0 || this.normalizedTarget() === index) return;
+
+    let delta = (((index - this.target) % count) + count) % count;
+    if (delta > count / 2) delta -= count;
+    this.target = Math.round(this.target + delta);
 
     if (this.reduced || !this.running) {
-      this.current = index;
-      this.transitionStart = null;
-      uniforms.uFrom.value = this.textures[index];
-      uniforms.uTo.value = this.textures[index];
-      uniforms.uAspectFrom.value = this.aspects[index];
-      uniforms.uAspectTo.value = this.aspects[index];
-      uniforms.uProgress.value = 0;
+      this.pos = this.target;
+      this.layout();
       this.renderStill();
-      return;
     }
+  }
 
-    // 遷移の途中でも、いま見えている側から次へつなぐ
-    if (this.transitionStart !== null && uniforms.uProgress.value > 0.5) {
-      uniforms.uFrom.value = uniforms.uTo.value;
-      uniforms.uAspectFrom.value = uniforms.uAspectTo.value;
+  /** ドラッグ開始。以降 dragBy の間は追従を止めて指に付ける */
+  beginDrag() {
+    this.dragging = true;
+    this.dragBase = this.pos;
+  }
+
+  /** ドラッグ中。deltaX は開始点からの移動量（CSS px、右が正） */
+  dragBy(deltaX: number) {
+    if (!this.dragging) return;
+    this.pos = this.dragBase - deltaX / this.spacing;
+    this.layout();
+    if (!this.running) this.renderStill();
+  }
+
+  /**
+   * ドラッグ終了。しきい値を超えていればその向きへ送り、
+   * 止まる先のスライド番号（0..N-1）を返す
+   */
+  endDrag(): number {
+    this.dragging = false;
+    const count = this.meshes.length;
+    const moved = this.pos - this.dragBase;
+    const steps =
+      Math.abs(moved) > SWIPE_THRESHOLD
+        ? Math.sign(moved) * Math.max(1, Math.round(Math.abs(moved)))
+        : 0;
+    this.target = Math.round(this.dragBase) + steps;
+
+    if (this.reduced || !this.running) {
+      this.pos = this.target;
+      this.layout();
+      this.renderStill();
     }
-    uniforms.uTo.value = this.textures[index];
-    uniforms.uAspectTo.value = this.aspects[index];
-    uniforms.uProgress.value = 0;
-    this.transitionStart = performance.now();
-    this.current = index;
+    return ((this.target % count) + count) % count;
   }
 
   setReduced(reduced: boolean) {
     this.reduced = reduced;
     if (reduced) {
       this.stop();
-      this.show(this.current);
+      this.pos = this.target;
+      this.layout();
+      this.renderStill();
     } else {
       this.start();
     }
@@ -200,22 +201,18 @@ export class SlideshowScene {
   start() {
     if (this.running || this.reduced) return;
     this.running = true;
+    this.lastTick = performance.now();
     const tick = () => {
       if (!this.running) return;
       const now = performance.now();
-      const uniforms = this.material.uniforms;
-      uniforms.uTime.value = (now - this.startedAt) / 1000;
+      const dt = Math.min(0.1, (now - this.lastTick) / 1000);
+      this.lastTick = now;
 
-      if (this.transitionStart !== null) {
-        const t = Math.min(1, (now - this.transitionStart) / TRANSITION_MS);
-        uniforms.uProgress.value = easeInOutCubic(t);
-        if (t >= 1) {
-          this.transitionStart = null;
-          uniforms.uFrom.value = this.textures[this.current];
-          uniforms.uAspectFrom.value = this.aspects[this.current];
-          uniforms.uProgress.value = 0;
-        }
+      if (!this.dragging && this.pos !== this.target) {
+        this.pos += (this.target - this.pos) * (1 - Math.exp(-DAMPING * dt));
+        if (Math.abs(this.target - this.pos) < 0.0005) this.pos = this.target;
       }
+      this.layout();
 
       this.renderer.render(this.scene, this.camera);
       this.frame = requestAnimationFrame(tick);
@@ -235,8 +232,8 @@ export class SlideshowScene {
   dispose() {
     this.stop();
     for (const texture of this.textures) texture.dispose();
+    for (const material of this.materials) material.dispose();
     this.geometry.dispose();
-    this.material.dispose();
     this.renderer.dispose();
   }
 }
